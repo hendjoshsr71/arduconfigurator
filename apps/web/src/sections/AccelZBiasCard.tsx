@@ -99,8 +99,9 @@ export function AccelZBiasCard({
 
       {waiting ? (
         <p className="bf-note" data-testid="zbias-prerequisite">
-          Accept a hover throttle first, on the card above. A bias learned on top of a wrong vertical
-          feedforward measures the feedforward&apos;s error as much as the accelerometer&apos;s.
+          Accept a hover throttle first, on <strong>Hover throttle learning</strong>. A bias learned
+          on top of a wrong vertical feedforward measures the feedforward&apos;s error as much as the
+          accelerometer&apos;s.
         </p>
       ) : null}
 

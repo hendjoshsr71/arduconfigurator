@@ -1617,9 +1617,14 @@ export function CalibrationSection(props: CalibrationSectionProps): ReactElement
                   setDraft={setDraft}
                 />
               ) : null}
-              {/* Two flights, two cards. They have different outcomes and the
-                  second has a real prerequisite; one card showed whichever half
-                  the vehicle happened to be on. */}
+              {/* Ordered by what depends on what.
+                  The two MOT_THST_HOVER cards sit together -- learning it in
+                  the air, and measuring it from a log when the firmware's own
+                  learner will not run -- and the Z-bias flight, which needs an
+                  accepted hover throttle before it means anything, comes after
+                  both. They stay SEPARATE cards because they are separate
+                  flights with separate outcomes; one card only ever showed
+                  whichever half the vehicle happened to be on. */}
               {isExpertMode && calibrationTab === 'flight' ? (
                 <HoverThrottleLearnCard
                   snapshot={snapshot}
@@ -1628,20 +1633,18 @@ export function CalibrationSection(props: CalibrationSectionProps): ReactElement
                   setDraft={setDraft}
                 />
               ) : null}
+              {/* Measured once, when a new frame and powertrain first fly --
+                  or whenever the firmware's learner came back with nothing. */}
               {isExpertMode && calibrationTab === 'flight' ? (
-                <AccelZBiasCard
+                <HoverThrottleFromLogCard
                   snapshot={snapshot}
                   canApplyDraftParameters={canApplyDraftParameters}
                   busyAction={busyAction}
                   setDraft={setDraft}
                 />
               ) : null}
-              {/* Its own card, not a step inside hover learning: measuring the
-                  hover throttle from a log is what you do ONCE when a new frame
-                  and powertrain first fly, and hover learning is the routine
-                  calibration that follows. */}
               {isExpertMode && calibrationTab === 'flight' ? (
-                <HoverThrottleFromLogCard
+                <AccelZBiasCard
                   snapshot={snapshot}
                   canApplyDraftParameters={canApplyDraftParameters}
                   busyAction={busyAction}

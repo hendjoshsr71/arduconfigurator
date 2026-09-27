@@ -4754,6 +4754,19 @@ test.describe('ArduPlane demo', () => {
     // The Z-bias flight is not due until a hover throttle is accepted: learning
     // a bias on a wrong vertical feedforward measures the feedforward's error.
     await expect(zbias.getByTestId('zbias-prerequisite')).toBeVisible()
+    // It must NAME the card it depends on, not point at a position: these sit
+    // in a row on a desktop and stack on a phone, so "above" is wrong at one
+    // width or the other.
+    await expect(zbias.getByTestId('zbias-prerequisite')).toContainText('Hover throttle learning')
+    await expect(zbias.getByTestId('zbias-prerequisite')).not.toContainText('above')
+    // Ordered by dependency: the two MOT_THST_HOVER cards together, then the
+    // flight that needs an accepted hover throttle.
+    const cardOrder = await page
+      .locator('[data-testid^="calibration-card-"]')
+      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-testid')))
+    const at = (id: string): number => cardOrder.indexOf(id)
+    expect(at('calibration-card-hover-throttle')).toBeLessThan(at('calibration-card-hover-throttle-log'))
+    expect(at('calibration-card-hover-throttle-log')).toBeLessThan(at('calibration-card-zbias'))
     await expect(card).toContainText('about 5 m')
     // The mode is not a detail: Copter::update_throttle_hover returns early in
     // every manual-throttle mode, so a hover flown in Stabilize or Acro learns

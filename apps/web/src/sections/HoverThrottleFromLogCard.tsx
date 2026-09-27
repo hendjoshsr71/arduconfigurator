@@ -66,8 +66,9 @@ export function HoverThrottleFromLogCard({
       </div>
       <p>
         Measures what this frame and powertrain actually hover at, from a flight you have already
-        flown. Do it once when a new build first flies — after that the firmware keeps the value up
-        to date on its own, and hover learning above is the routine calibration.
+        flown. Do it once when a new build first flies, or when <strong>Hover throttle learning</strong>
+        came back with nothing because the firmware&apos;s own learner never ran. After that the
+        firmware keeps the value up to date and that card is the routine calibration.
       </p>
 
       <div className="config-pills">
