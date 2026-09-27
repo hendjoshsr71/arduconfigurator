@@ -6480,8 +6480,8 @@ test.describe('App update banner', () => {
 
 test.describe('VTX band/frequency table', () => {
   test('detected table renders an editable grid; edits upload via MAVFTP', async ({ page }) => {
-    // The demo seeds @VTX/vtxtable.dat (3 factory bands × 8ch + power levels),
-    // so the VTX view shows the real editable table instead of the preview.
+    // The demo seeds @VTX/vtxtable.dat as a VERSION 2 blob: 3 factory bands ×
+    // 8ch and NO power section, which is the shape a real board reports now.
     await page.goto('/')
     await connectViaHeader(page)
     await page.getByTestId('view-button-osd').click()
@@ -6498,14 +6498,7 @@ test.describe('VTX band/frequency table', () => {
     await cell.fill('5900')
     await expect(page.getByTestId('vtx-table-save')).toBeEnabled()
 
-    // Power levels are editable too (value + label); the seeded first level is
-    // 25 mW / "25". Editing them also dirties the draft and rides the same save.
-    const powerValue = page.getByTestId('vtx-table-power-value-0')
-    await expect(powerValue).toHaveValue('25')
-    await powerValue.fill('50')
-    await page.getByTestId('vtx-table-power-label-0').fill('50')
-
-    // Save uploads the whole table over MAVFTP; success clears the dirty state
+    // Save uploads the BAND table over MAVFTP; success clears the dirty state
     // (button → "Saved") with no error banner — proves the write round-tripped.
     await page.getByTestId('vtx-table-save').click()
     await expect(page.getByTestId('vtx-table-save')).toHaveText('Saved', { timeout: 10000 })
@@ -6563,37 +6556,81 @@ test.describe('VTX band/frequency table', () => {
     // and dirties it so the operator can review and Save.
     await page.getByTestId('vtx-table-preset-select').selectOption('raceband-8ch-25-600')
     await expect(page.getByTestId('vtx-table-freq-0-0')).toHaveValue('5658')
-    await expect(page.getByTestId('vtx-table-power-value-0')).toHaveValue('25')
     await expect(page.getByTestId('vtx-table-save')).toBeEnabled()
   })
 
-  test('loads an analog power-table preset (power-only) with a 3-char-safe 1600 mW label', async ({ page }) => {
+  test('the power table is parameters, not part of the uploaded blob', async ({ page }) => {
+    // Version 2 moved power out of @VTX/vtxtable.dat into VTX_PWRTBL_EN and six
+    // slots. A slot is -1 unused, 0 pit mode, or a power in mW — and the demo
+    // seeds exactly that: pit, 25, 200, 500, 800, unused.
     await page.goto('/')
     await connectViaHeader(page)
     await page.getByTestId('view-button-osd').click()
     await page.getByTestId('osd-vtx-tab-vtx').click()
     await expect(page.getByTestId('vtx-table-editor')).toBeVisible({ timeout: 15000 })
 
-    // The power preset swaps only the ladder (bands untouched), and the 1600 mW
-    // level's label fits the firmware's 3-char field as "1.6" (not "160").
+    await expect(page.getByTestId('vtx-table-power-enable')).toBeChecked()
+    // Slot 1 is pit mode: 0 is NOT "0 mW", so its value box is not an amount.
+    await expect(page.getByTestId('vtx-table-power-kind-0')).toHaveValue('pit')
+    await expect(page.getByTestId('vtx-table-power-value-0')).toBeDisabled()
+    await expect(page.getByTestId('vtx-table-power-label-0')).toHaveText('PIT')
+    await expect(page.getByTestId('vtx-table-power-kind-1')).toHaveValue('power')
+    await expect(page.getByTestId('vtx-table-power-value-1')).toHaveValue('25')
+    // -1 is unused, and reads as unused rather than as a power of -1.
+    await expect(page.getByTestId('vtx-table-power-kind-5')).toHaveValue('unused')
+
+    // Editing a slot stages an ordinary PARAMETER draft — no FTP upload, and it
+    // rides the normal review/Apply like every other parameter in the app.
+    await page.getByTestId('vtx-table-power-value-1').fill('50')
+    await expect(page.locator('body')).toContainText('staged change')
+    // The band table's own Save is untouched by a power edit: different transport.
+    await expect(page.getByTestId('vtx-table-save')).toBeDisabled()
+  })
+
+  test('the display text is derived from the value, since no label is stored', async ({ page }) => {
+    await page.goto('/')
+    await connectViaHeader(page)
+    await page.getByTestId('view-button-osd').click()
+    await page.getByTestId('osd-vtx-tab-vtx').click()
+    await expect(page.getByTestId('vtx-table-editor')).toBeVisible({ timeout: 15000 })
+
+    // 1600 mW shows as "1.6" rather than a truncated "160" — the old format
+    // stored a 3-char label, and this is what replaces it.
+    await page.getByTestId('vtx-table-power-value-1').fill('1600')
+    await expect(page.getByTestId('vtx-table-power-label-1')).toHaveText('1.6')
+  })
+
+  test('a power preset stages the slot parameters and turns the table on', async ({ page }) => {
+    await page.goto('/')
+    await connectViaHeader(page)
+    await page.getByTestId('view-button-osd').click()
+    await page.getByTestId('osd-vtx-tab-vtx').click()
+    await expect(page.getByTestId('vtx-table-editor')).toBeVisible({ timeout: 15000 })
+
     await page.getByTestId('vtx-table-power-preset-select').selectOption('power-25-1600')
+    await expect(page.getByTestId('vtx-table-power-value-0')).toHaveValue('25')
     await expect(page.getByTestId('vtx-table-power-value-3')).toHaveValue('1600')
-    await expect(page.getByTestId('vtx-table-power-label-3')).toHaveValue('1.6')
-    // Bands were not touched by a power-only preset.
+    // The ladder is shorter than six slots, so the rest must read UNUSED — a
+    // stale slot left from the previous table is a power the pilot never chose.
+    await expect(page.getByTestId('vtx-table-power-kind-4')).toHaveValue('unused')
+    await expect(page.getByTestId('vtx-table-power-kind-5')).toHaveValue('unused')
+    // Bands are untouched: a power preset does not go near the blob.
     await expect(page.getByTestId('vtx-table-freq-0-0')).toHaveValue('5865')
   })
 
-  test('editing a power value auto-derives a fitting 3-char label (1600 → 1.6)', async ({ page }) => {
+  test('the standard bands can be loaded back, since there is no reset command', async ({ page }) => {
     await page.goto('/')
     await connectViaHeader(page)
     await page.getByTestId('view-button-osd').click()
     await page.getByTestId('osd-vtx-tab-vtx').click()
     await expect(page.getByTestId('vtx-table-editor')).toBeVisible({ timeout: 15000 })
 
-    // The label field can't hold "1600" (3-char firmware limit); typing the value
-    // auto-fills a fitting label instead of leaving a misleading truncated one.
-    await page.getByTestId('vtx-table-power-value-0').fill('1600')
-    await expect(page.getByTestId('vtx-table-power-label-0')).toHaveValue('1.6')
+    await page.getByTestId('vtx-table-restore-defaults').click()
+    // The firmware's 11 standard bands, in VTX_BAND order: A first, 3G3_B last.
+    await expect(page.getByTestId('vtx-table-freq-0-0')).toHaveValue('5865')
+    await expect(page.getByTestId('vtx-table-freq-10-0')).toHaveValue('3170')
+    // Staged, not sent: restoring defaults IS an upload, so it goes through Save.
+    await expect(page.getByTestId('vtx-table-save')).toBeEnabled()
   })
 })
 

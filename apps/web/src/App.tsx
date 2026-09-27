@@ -45,6 +45,15 @@ import {
   type RcAxisId,
   type RcMappingCandidate,
   LEGACY_PARAM_ALIASES,
+  readVtxPowerTable,
+  defaultVtxPowerLabel,
+  vtxPowerTableWrites,
+  vtxPowerPresetLevels,
+  VTX_POWER_PRESETS,
+  VTX_POWER_SLOT_PIT,
+  VTX_POWER_SLOT_UNUSED,
+  VTX_POWER_TABLE_ENABLE_PARAM,
+  VTX_POWER_TABLE_SLOT_PARAMS,
 } from '@arduconfig/ardupilot-core'
 import {
   arducopterMetadata,
@@ -6325,13 +6334,72 @@ export function App() {
     () => deriveRcLogicChannelClaims(rcLogicVisibleAssignments),
     [rcLogicVisibleAssignments]
   )
-  // Non-zero @VTX power levels in table order — a VTX_POWER RCL term's level
-  // selector stores the 0-based index here into OPT bits 5-7. Use the DETECTED
-  // (saved) table, not the editable draft: the RCL index resolves against what
-  // the FC actually has, so unsaved VTX-table edits must not shift it.
+  // Active power levels in slot order — a VTX_POWER RCL term's level selector
+  // stores the 0-based index here into OPT bits 5-7. Read from the LIVE
+  // parameters (VTX_PWRTBL1..6): the index resolves against what the FC
+  // actually has, so an unapplied draft must not shift it.
+  // Draft-first, like every other editable parameter surface: a staged slot
+  // must SHOW as staged. Reading only the live value meant typing a power left
+  // the box unchanged until Apply, which reads as an edit that did not take.
+  const vtxPowerTable = useMemo(
+    () =>
+      readVtxPowerTable((paramId) => {
+        const edited = editedValues[paramId]
+        if (edited !== undefined && edited !== '') {
+          const parsed = Number(edited)
+          if (Number.isFinite(parsed)) {
+            return Math.round(parsed)
+          }
+        }
+        return readRoundedParameter(snapshot, paramId)
+      }),
+    [snapshot, editedValues]
+  )
+  // Power slots stage as ordinary parameter drafts — same review + Apply as
+  // every other parameter, and no FTP upload involved.
+  const handleVtxPowerSlotChange = useCallback(
+    (index: number, value: number | 'pit' | undefined) => {
+      const paramId = VTX_POWER_TABLE_SLOT_PARAMS[index]
+      if (paramId === undefined) {
+        return
+      }
+      setDraft(
+        paramId,
+        String(
+          value === undefined
+            ? VTX_POWER_SLOT_UNUSED
+            : value === 'pit'
+              ? VTX_POWER_SLOT_PIT
+              : Math.max(0, Math.round(value))
+        )
+      )
+    },
+    [setDraft]
+  )
+  const handleVtxPowerEnabledChange = useCallback(
+    (enabled: boolean) => {
+      setDraft(VTX_POWER_TABLE_ENABLE_PARAM, enabled ? '1' : '0')
+    },
+    [setDraft]
+  )
+  const handleVtxPowerPreset = useCallback(
+    (presetId: string) => {
+      const preset = VTX_POWER_PRESETS.find((candidate) => candidate.id === presetId)
+      // An empty id clears the ladder — used by the Betaflight import before it
+      // stages the levels the snippet carried, so a shorter imported ladder
+      // cannot leave a stale slot behind.
+      const levels = preset ? vtxPowerPresetLevels(preset).map((level) => level.value) : []
+      // Turn the table on with it: staging six slots and leaving VTX_PWRTBL_EN
+      // at 0 writes a table the vehicle then ignores.
+      for (const write of vtxPowerTableWrites(levels, { enable: levels.length > 0 })) {
+        setDraft(write.paramId, String(write.value))
+      }
+    },
+    [setDraft]
+  )
   const rcMixerVtxPowerLevels = useMemo(
-    () => deriveVtxPowerLevels(vtxTable.detected?.powerLevels),
-    [vtxTable.detected]
+    () => (vtxPowerTable.supported ? deriveVtxPowerLevels(vtxPowerTable.slots, defaultVtxPowerLabel) : undefined),
+    [vtxPowerTable]
   )
   // A slot freed by a prior remove stays in rcLogicRemovedTerms even after the
   // disable is applied (the Set is never pruned). Reusing that slot for a new
@@ -8992,6 +9060,10 @@ export function App() {
             onApplyScopedDrafts={handleApplyScopedParameterDrafts}
             onDiscardScopedDrafts={handleDiscardScopedParameterDrafts}
             vtxTable={vtxTable}
+            powerTable={vtxPowerTable}
+            onPowerSlotChange={handleVtxPowerSlotChange}
+            onPowerEnabledChange={handleVtxPowerEnabledChange}
+            onPowerPreset={handleVtxPowerPreset}
           />
         ) : null}
 

@@ -80,7 +80,15 @@ import {
 import { applyArducopter47Override } from './firmware-overrides.js'
 import { LEGACY_PARAM_ALIASES, MODERN_TO_LEGACY_ALIASES } from './parameter-aliases.js'
 import { listMavftpLogFiles } from './mavftp-log-directories.js'
-import { VTX_TABLE_FTP_PATH, parseVtxTable, serializeVtxTable, type VtxTable } from './vtx-table.js'
+import {
+  VTX_TABLE_FTP_PATH,
+  VtxTableStorageUnavailableError,
+  parseVtxTable,
+  serializeVtxTable,
+  type VtxTable
+} from './vtx-table.js'
+import { defaultVtxTable } from './vtx-table-defaults.js'
+import { MavftpUploadRejectedError } from './mavftp.js'
 import {
   OSD_SHORTHAND_FTP_PATH,
   parseOsdShorthand,
@@ -1553,8 +1561,33 @@ export class ArduPilotConfiguratorRuntime {
    *  existing @VTX/vtxtable.dat. The firmware re-validates (magic/version/CRC)
    *  and rejects a malformed blob, leaving its table unchanged. */
   async writeVtxTable(table: VtxTable): Promise<void> {
-    await this.mavftp.uploadRemoteFile(VTX_TABLE_FTP_PATH, serializeVtxTable(table), { overwrite: true })
+    try {
+      await this.mavftp.uploadRemoteFile(VTX_TABLE_FTP_PATH, serializeVtxTable(table), {
+        overwrite: true
+      })
+    } catch (error) {
+      // The firmware validates on close and exposes no capability flag for
+      // this, so a refused upload of a well-formed table means one thing in
+      // practice: the board has nowhere to put it. Only boards with 32 KB of
+      // parameter storage (most H7s) can store a table; most F405s cannot.
+      // Reads still work there and return the defaults.
+      //
+      // Serialization already guarantees the CRC and dimensions, so "the blob
+      // is malformed" is not a live possibility for a table WE built.
+      if (error instanceof MavftpUploadRejectedError) {
+        throw new VtxTableStorageUnavailableError()
+      }
+      throw error
+    }
     this.appendStatusEntry('info', `Uploaded VTX table over MAVFTP (${table.bands.length} bands).`)
+  }
+
+  /** Restore the firmware's standard 11 bands. There is no reset command in
+   *  the protocol — restoring the defaults means uploading them. */
+  async restoreDefaultVtxTable(): Promise<VtxTable> {
+    const table = defaultVtxTable()
+    await this.writeVtxTable(table)
+    return table
   }
 
   /** Read the OSD message shorthand table (@OSD/shorthand.dat), or undefined
