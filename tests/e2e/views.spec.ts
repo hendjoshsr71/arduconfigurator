@@ -518,6 +518,43 @@ test.describe('Parameters tab (expert-only)', () => {
     await expect(prompt).toHaveCount(0)
   })
 
+  test('an imported value can be edited before it is staged', async ({ page }) => {
+    // A file is a starting point, not a verdict: importing someone else's tune
+    // usually means wanting most of it and a different number in a couple of
+    // places. Editing after staging works, but it writes the file's value into
+    // the draft set first and corrects it afterwards — a round trip through a
+    // value you never wanted.
+    await page.goto('/')
+    await connectViaHeader(page)
+    await enableExpertMode(page)
+    await page.getByTestId('view-button-parameters').click()
+    await expectParameterSyncComplete(page)
+
+    await page.locator('input[aria-label="Import parameter backup file"]').setInputFiles({
+      name: 'e2e-backup.parm',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('BATT_LOW_VOLT,13.5\n')
+    })
+    await expect(page.getByTestId('parameter-import-preview')).toBeVisible()
+
+    // The imported value is an input carrying what the file asked for.
+    const value = page.getByTestId('parameter-import-value-BATT_LOW_VOLT')
+    await expect(value).toHaveValue('13.5')
+
+    // Change it, then stage — what lands in the drafts is the EDITED number,
+    // not the file's.
+    await value.fill('12.8')
+    await page.getByTestId('parameter-import-stage-BATT_LOW_VOLT').click()
+    await expect(page.getByRole('button', { name: /^Apply All \(1\)/ })).toBeVisible()
+
+    // The staged row carries the EDITED value...
+    await expect(page.getByTestId('parameter-diff-edit-BATT_LOW_VOLT')).toHaveValue('12.8')
+    // ...while "Import" still shows what the FILE asked for. Editing before
+    // staging must not rewrite history: that display exists so the imported
+    // number is recoverable after the draft is nudged.
+    await expect(page.getByTestId('parameter-diff-import-BATT_LOW_VOLT')).toContainText('13.5')
+  })
+
   test('a staged bitmask is editable bit by bit, and a draft matching live clears on re-sync', async ({ page }) => {
     await page.goto('/')
     await connectViaHeader(page)

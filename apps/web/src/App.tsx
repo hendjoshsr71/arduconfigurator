@@ -1156,6 +1156,7 @@ export function App() {
     stagePendingParameterImport,
     stagePendingParameterImportSubset,
     dropPendingParameterImportEntries,
+    editPendingParameterImportValue,
     importedDraftOrigins,
     dismissPendingParameterImport
   } = useParameterBackupIo({
@@ -10512,6 +10513,7 @@ export function App() {
           onExportParameterBackupAsParams={handleExportParameterBackupAsParams}
           onImportParameterBackup={handleImportParameterBackup}
           pendingParameterImport={pendingParameterImport}
+          onEditPendingParameterImportValue={editPendingParameterImportValue}
           onStagePendingParameterImport={stagePendingParameterImport}
           onStagePendingParameterImportSubset={stagePendingParameterImportSubset}
           importedDraftOrigins={importedDraftOrigins}
