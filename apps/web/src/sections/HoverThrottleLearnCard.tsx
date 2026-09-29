@@ -136,6 +136,18 @@ export function HoverThrottleLearnCard({
                 // (update_hover_bias_learning adds the already-applied frozen
                 // correction back before filtering).
                 setDraft('ACC_ZBIAS_LEARN', String(ACC_ZBIAS_LEARN_SAVE | ACC_ZBIAS_LEARN_USE))
+                // Start the bias flight from ZERO, not from whatever a previous
+                // calibration left behind. The learner filters TOWARDS what it
+                // measures (update_hover_bias_learning is a low-pass onto the
+                // current value), so an old bias still in INS*_ACC_VRFB_Z is a
+                // starting point it has to walk away from — and on a vehicle
+                // that arrives with someone else's calibration it is somebody
+                // else's number the flight would be refining. The retry path
+                // already cleared these for exactly this reason; starting the
+                // flight should too.
+                for (const id of state.biasParamIds) {
+                  setDraft(id, '0')
+                }
                 // Freeze what was just accepted. Left at Learn-and-Save, the
                 // Z-bias flight re-learns and overwrites the hover throttle the
                 // operator signed off, and the card would then report a value

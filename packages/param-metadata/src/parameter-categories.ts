@@ -63,18 +63,21 @@ const RULES: readonly CategoryRule[] = [
   // The FILTn_ notch bank — filtering, despite not living under INS_.
   { test: /^FILT_/, category: 'filters' },
 
-  // --- sensors
-  { test: /^(INS|IMU|COMPASS_|BARO|AHRS_|EK_|EK_SRC|GPS|ARSPD|TEMP|RPM_|CUST_ROT|EAHRS|VISO|BCN|IM_)/, category: 'sensors' },
+  // --- sensors. ACC_ is the fork's Z-bias learning (ACC_ZBIAS_LEARN), which
+  // is not in ArduPilot's pdef and so cannot be caught by the coverage test
+  // against it — it was found sitting in "Uncategorized" in the app.
+  { test: /^(INS|IMU|COMPASS_|BARO|AHRS_|EK_|EK_SRC|GPS|ARSPD|TEMP|RPM_|CUST_ROT|EAHRS|VISO|BCN|IM_|ACC_)/, category: 'sensors' },
 
   // --- radio / RC input. PILOT_* is stick feel, which is tuning, so it must
   // not be swept up by a broad RC rule.
-  { test: /^(RC_|RC$|RCMAP_|BTN_|RSSI_|SID|SIMPLE|SUPER_SIMPLE)/, category: 'radio' },
+  // RCL_ is the fork's AP_RC_Logic mixer; JS_ is ArduSub's joystick.
+  { test: /^(RC_|RC$|RCMAP_|BTN_|RSSI_|SID|SIMPLE|SUPER_SIMPLE|RCL_|JS_)/, category: 'radio' },
 
   // --- flight modes and the mode-shaped features
-  { test: /^(FLTMODE|LOIT_|PHLD_|FHLD|CIRCLE_|RTL_|SRTL_|LAND_|AROT_|ZIGZ_|TMODE|FOLL|PLND_|PLDP_|WP_|MIS_|RALLY_|TERRAIN_|SPRAY_|WVANE_|AUTOTUNE_|AUTO_OPTIONS|GUID_|THROW_|TKOFF_|SURFTRAK_|INITIAL_MODE|FLIGHT_OPTIONS)/, category: 'modes' },
+  { test: /^(FLTMODE|LOIT_|PHLD_|FHLD|CIRCLE_|RTL_|SRTL_|LAND_|AROT_|ZIGZ_|TMODE|FOLL|PLND_|PLDP_|WP_|MIS_|RALLY_|TERRAIN_|SPRAY_|WVANE_|AUTOTUNE_|AUTO_OPTIONS|GUID_|THROW_|TKOFF_|SURFTRAK_|INITIAL_MODE|FLIGHT_OPTIONS|MODE$|MODE_CH|VALT_|WPNAV_|NAVL_|CRUISE_|SURFACE_DEPTH)/, category: 'modes' },
 
   // --- tuning / control
-  { test: /^(ATC_|PSC|PILOT_|THR_DZ|TUNE|GND_EFFECT_COMP)/, category: 'tuning' },
+  { test: /^(ATC_|PSC|PILOT_|THR_DZ|TUNE|GND_EFFECT_COMP|SPEED_MAX|TURN_)/, category: 'tuning' },
   { test: /^ACRO_/, category: 'acro' },
 
   // --- outputs and the motor/servo stack

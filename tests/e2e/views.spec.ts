@@ -4833,16 +4833,26 @@ test.describe('ArduPlane demo', () => {
     // A learned hover throttle asks whether the flight was any good, and "no"
     // is a real answer — the vehicle re-learns every flight, so flying again
     // simply overwrites it.
-    await open('MOT_THST_HOVER:0.42')
+    //
+    // Seed a NON-ZERO learned bias, which is the case that matters: this is a
+    // vehicle carrying a previous calibration (the reported one had
+    // INS_ACC_VRFB_Z = -0.022025). With the demo's default of 0 the clear would
+    // stage nothing and prove nothing.
+    await open('MOT_THST_HOVER:0.42,INS_ACC_VRFB_Z:-0.022')
     await expect(page.getByTestId('hover-learn-flight-1-yes')).toBeVisible()
     await expect(page.getByTestId('hover-learn-flight-1-no')).toBeVisible()
     await expect(card).toContainText('0.420')
 
-    // Accepting flight 1 must also FREEZE what was accepted: left at
-    // Learn-and-Save, flight 2 re-learns the hover throttle and overwrites the
-    // value the operator just signed off. Two staged changes, not one.
+    // Accepting flight 1 stages THREE things, not one:
+    //   ACC_ZBIAS_LEARN = 3  arm the bias flight (learn AND apply)
+    //   INS*_ACC_VRFB_Z = 0  start it from zero rather than refining whatever a
+    //                        previous calibration left behind
+    //   MOT_HOVER_LEARN = 0  freeze the hover throttle just signed off, so the
+    //                        bias flight cannot overwrite it
+    // (The demo's second and third IMU biases are already 0, so they stage as
+    // "matches current" and do not count as changes.)
     await page.getByTestId('hover-learn-flight-1-yes').click()
-    await expect(page.locator('body')).toContainText('2 staged changes')
+    await expect(page.locator('body')).toContainText('3 staged changes')
 
     await open('MOT_THST_HOVER:0.42,ACC_ZBIAS_LEARN:1')
     await expect(zbias).toContainText('flight 2')

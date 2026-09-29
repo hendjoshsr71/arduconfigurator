@@ -2,7 +2,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
-import { categoryForParameterId } from '../packages/param-metadata/dist/index.js'
+import {
+  arducopterMetadata,
+  categoryForParameterId,
+  normalizeFirmwareMetadata
+} from '../packages/param-metadata/dist/index.js'
+import * as mockScenario from '../packages/protocol-mavlink/dist/mock-scenario.js'
 
 // ArduPilot's own grouping, pinned in the repo for the wiki generator: the
 // top-level keys of apm.pdef.json ARE the parameter groups. Checking the
@@ -77,4 +82,30 @@ test('a more specific rule wins over the family it sits in', () => {
 
 test('SITL and script parameters stay uncategorised rather than forced', () => {
   assert.equal(categoryForParameterId('SIM_GPS1_TYPE'), undefined)
+})
+
+
+// The pdef above is ArduCopter only, and it is UPSTREAM — so it cannot see the
+// fork's own parameters (ACC_ZBIAS_LEARN, RCL_*, VALT_*) or the Rover/Sub
+// families. ACC_ZBIAS_LEARN was found sitting in "Uncategorized" in the running
+// app for exactly that reason. The demo vehicles are the parameter sets this
+// app actually ships against, so they close the gap.
+test('every parameter the demo vehicles report has a category', () => {
+  const catalog = normalizeFirmwareMetadata(arducopterMetadata)
+  const curated = (id) => Boolean(catalog.parameters[id] && catalog.parameters[id].category)
+
+  const vehicles = Object.keys(mockScenario).filter(
+    (key) => /Parameters$/.test(key) && mockScenario[key] && typeof mockScenario[key] === 'object'
+  )
+  assert.ok(vehicles.length > 0, 'found no mock parameter sets to check')
+
+  const gaps = []
+  for (const vehicle of vehicles) {
+    for (const id of Object.keys(mockScenario[vehicle])) {
+      if (!curated(id) && categoryForParameterId(id) === undefined) {
+        gaps.push(`${vehicle}: ${id}`)
+      }
+    }
+  }
+  assert.deepEqual(gaps, [], `demo parameters with no category:\n  ${gaps.join('\n  ')}`)
 })
