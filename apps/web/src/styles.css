@@ -353,6 +353,31 @@
   box-sizing: border-box;
 }
 
+/* Type scale by viewport. Every text size in the stylesheet is one of the
+   --text-* / --font-title tokens, so stepping the tokens scales the app at
+   once. Two steps, not a continuous clamp: the base scale was tuned for a
+   laptop, and a 27-inch display at 2000px wide read as small everywhere. */
+@media (min-width: 1800px) {
+  :root {
+    --text-xs: 11px;
+    --text-sm: 12px;
+    --text-md: 13px;
+    --text-lg: 14px;
+    --text-xl: 15px;
+    --font-title: 20px;
+  }
+}
+@media (min-width: 2300px) {
+  :root {
+    --text-xs: 12px;
+    --text-sm: 13px;
+    --text-md: 14px;
+    --text-lg: 16px;
+    --text-xl: 17px;
+    --font-title: 22px;
+  }
+}
+
 html {
   min-height: 100%;
   /* `overflow-x: clip` suppresses horizontal scroll WITHOUT turning the
