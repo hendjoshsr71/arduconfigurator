@@ -8,6 +8,7 @@ import type {
 import { buildOnboardLogFilename } from '@arduconfig/ardupilot-core'
 
 import { downloadBinaryFile } from '../download-file'
+import { fetchOnboardLogBytes } from '../view-models/onboard-log-bytes'
 import {
   mavftpEntriesToLogItems,
   mergeOnboardLogSources,
@@ -65,7 +66,10 @@ export interface OnboardLogs extends OnboardLogsState {
   /** Download one log's bytes to a browser file, reporting progress. */
   download: (id: number) => void
   /** The log's bytes, for a caller that wants to analyse rather than save it. */
-  fetchBytes: (id: number) => Promise<Uint8Array | undefined>
+  fetchBytes: (
+    id: number,
+    onProgress?: (progress: LogDownloadProgress) => void
+  ) => Promise<Uint8Array | undefined>
   /** Erase every log on the card. Irreversible; the caller confirms first. */
   erase: () => void
 }
@@ -401,12 +405,15 @@ export function useOnboardLogs(runtime: OnboardLogCapableRuntime | undefined): O
         )
       }
       try {
-        let bytes: Uint8Array
-        if (mavftpItem) {
-          bytes = await runtime.downloadMavftpLog(mavftpItem.path, onProgress)
-        } else {
-          bytes = await runtime.downloadOnboardLog(id, log.sizeBytes, onProgress)
-        }
+        // Shared with Upload to server and the calibration cards: one
+        // transport decision, with a LOG_* fallback when the burst fails.
+        const { bytes, mavftpError } = await fetchOnboardLogBytes({
+          runtime,
+          id,
+          sizeBytes: log.sizeBytes,
+          mavftpPath: mavftpItem?.path,
+          onProgress
+        })
         // Both sources use the descriptive <uid>_log<id>[_date].bin convention.
         // MAVFTP listings carry no timestamp (so no date part), but tagging with
         // the board uid + log number still beats the raw on-FC "00000042.BIN"
@@ -417,7 +424,10 @@ export function useOnboardLogs(runtime: OnboardLogCapableRuntime | undefined): O
         setState((prev) => ({
           ...prev,
           status: 'ready',
-          message: `Downloaded ${filename} (${bytes.length} bytes).`,
+          message:
+            mavftpError === undefined
+              ? `Downloaded ${filename} (${bytes.length} bytes).`
+              : `Downloaded ${filename} (${bytes.length} bytes) over the MAVLink log stream — MAVFTP failed first (${mavftpError.message}).`,
           activeDownloadId: undefined,
           activeDownloadPercent: undefined,
           activeDownloadReceivedBytes: undefined,
@@ -447,14 +457,22 @@ export function useOnboardLogs(runtime: OnboardLogCapableRuntime | undefined): O
    * from download(), which saves and must keep doing so for the Logs tab.
    */
   const fetchBytes = useCallback(
-    async (id: number): Promise<Uint8Array | undefined> => {
+    async (
+      id: number,
+      onProgress?: (progress: LogDownloadProgress) => void
+    ): Promise<Uint8Array | undefined> => {
       if (!runtime) return undefined
       const log = logsRef.current.find((entry) => entry.id === id)
       if (!log) return undefined
       const mavftpItem = await resolveMavftpItem(id)
-      return mavftpItem
-        ? runtime.downloadMavftpLog(mavftpItem.path)
-        : runtime.downloadOnboardLog(id, log.sizeBytes)
+      const { bytes } = await fetchOnboardLogBytes({
+        runtime,
+        id,
+        sizeBytes: log.sizeBytes,
+        mavftpPath: mavftpItem?.path,
+        onProgress
+      })
+      return bytes
     },
     [runtime, resolveMavftpItem]
   )

@@ -864,7 +864,7 @@ export function App() {
   // Upload-to-your-own-server for onboard logs. Entirely self-contained: its
   // own client, its own stored session, and no relationship to any other
   // network surface in this app.
-  const logUpload = useLogUpload(runtime)
+  const logUpload = useLogUpload(runtime, { fetchBytes: onboardLogs.fetchBytes })
   // Library-tab notices (snapshot / provisioning / tuning-profile / preset /
   // session ParameterNotice banners + the post-copy sticky flag) live in
   // their own hook — see use-library-notices.ts.
