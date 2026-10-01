@@ -10406,7 +10406,7 @@ details.metadata-settings-section:not([open]) > summary::after {
    is the recommended path; manual is an opt-in disclosure. */
 .motor-reorder-manual > summary {
   cursor: pointer;
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   color: var(--text-muted);
   padding: 4px 0;
   user-select: none;
@@ -10415,8 +10415,8 @@ details.metadata-settings-section:not([open]) > summary::after {
   color: var(--text);
 }
 .motor-reorder-manual__hint {
-  margin: 6px 0 10px;
-  font-size: var(--text-md);
+  margin: 2px 0 6px;
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
 
@@ -10443,10 +10443,10 @@ details.metadata-settings-section:not([open]) > summary::after {
 
 .motor-reorder-table__row {
   display: grid;
-  grid-template-columns: 88px 96px minmax(0, 1fr);
-  gap: var(--space-3);
+  grid-template-columns: 48px 64px minmax(0, 1fr);
+  gap: var(--space-2);
   align-items: center;
-  padding: 12px 14px;
+  padding: 4px 10px;
   background: rgba(var(--fill-rgb), 0.96);
 }
 

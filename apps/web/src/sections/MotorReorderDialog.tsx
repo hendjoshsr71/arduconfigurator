@@ -390,13 +390,13 @@ export function MotorReorderDialog({
               <details className="motor-reorder-manual" data-testid="motor-reorder-manual">
                 <summary>Manual output mapping (optional)</summary>
                 <p className="motor-reorder-manual__hint">
-                  Prefer “Identify motors interactively” above. Use this only if you already know each motor’s output.
+                  Only if you already know each motor’s output.
                 </p>
                 <div className="motor-reorder-table">
                 <div className="motor-reorder-table__row motor-reorder-table__row--header">
                   <span>Motor</span>
                   <span>Current</span>
-                  <span>Target Output</span>
+                  <span>Target</span>
                 </div>
                 {motorReorderRows.map((row) => (
                   <label key={`motor-reorder-row:${row.motorNumber}`} className="motor-reorder-table__row">
