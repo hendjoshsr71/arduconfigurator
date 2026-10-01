@@ -2958,6 +2958,8 @@ test.describe('Config view', () => {
       await expect(tip).toBeVisible({ timeout: 2_000 })
     }).toPass({ timeout: 15_000 })
     await expect(tip).toContainText('FRAME_CLASS')
+    // The parameter-reference link rides on the same dot now.
+    await expect(page.getByTestId('param-wiki-FRAME_CLASS')).toHaveAttribute('href', /param=FRAME_CLASS/)
     // The sibling bubble that used to sit beside the editor is gone: one "i"
     // per editable field, the one inline after its label.
     await expect(page.getByTestId('config-field-info-FRAME_CLASS')).toHaveCount(0)
@@ -7724,6 +7726,7 @@ test.describe('Tuning ▸ Filters', () => {
     await expect(page.getByTestId('param-wiki-INS_HNTCH_FREQ')).toHaveCount(1)
     for (const id of ['INS_HNTCH_MODE', 'INS_HNTCH_OPTS', 'INS_HNTCH_REF']) {
       await expect(page.getByTestId(`param-info-${id}`), id).toBeVisible()
+      await expect(page.getByTestId(`param-wiki-${id}`), id).toHaveCount(1)
     }
   })
 

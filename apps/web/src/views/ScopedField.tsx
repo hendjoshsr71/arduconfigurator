@@ -79,6 +79,7 @@ export function ParamIdHint({ parameter }: { parameter: ParameterState }): React
           label="Parameter details"
           testId={`param-info-${parameter.id}`}
           wide
+          paramId={parameter.id}
         >
           <span className="info-dot-line">
             <strong>{parameter.id}</strong>

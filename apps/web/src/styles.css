@@ -8506,9 +8506,15 @@ body.is-status-dash-dragging {
 }
 /* The field's own label is uppercase with tracking; a paragraph of parameter
    documentation must not inherit that. */
-.scoped-editor-field__meta .receiver-info-tip {
+/* The tip and every line in it: the field's own label rules (uppercase,
+   tracking, data font) reach each nested span, not just the tip. */
+.scoped-editor-field .receiver-info-tip,
+.scoped-editor-field .receiver-info-tip span,
+.scoped-editor-field .receiver-info-tip a {
   text-transform: none;
   letter-spacing: normal;
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
 }
 
 .scoped-editor-field input,
