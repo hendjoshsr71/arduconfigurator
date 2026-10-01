@@ -219,31 +219,27 @@ function MotorSpinAcknowledgements(props: {
   setPropsRemovedAcknowledged: (value: boolean) => void
   testAreaAcknowledged: boolean
   setTestAreaAcknowledged: (value: boolean) => void
-  /** Prefix for the two checkbox test ids — each copy needs unique hooks. */
+  /** Prefix for the checkbox test id — each copy needs a unique hook. */
   testIdPrefix: string
 }): ReactElement {
-  // Deliberately minimal: two checkboxes on one line, short labels, no card,
-  // heading or badge. Sitting directly against the button supplies the context
-  // the old standalone card's long sentences were compensating for.
+  // One checkbox, one sentence. The props/area pair rendered as two boxes
+  // here while Motors showed one combined box for the same state, which is how
+  // "ticking either copy ticks all of them" became "why is this one already
+  // ticked" — the second box was never a second decision.
+  const acknowledged = props.propsRemovedAcknowledged && props.testAreaAcknowledged
   return (
     <div className="motor-spin-acks" data-testid={`${props.testIdPrefix}-motor-acks`}>
       <label>
         <input
           type="checkbox"
-          checked={props.propsRemovedAcknowledged}
-          onChange={(event) => props.setPropsRemovedAcknowledged(event.target.checked)}
+          checked={acknowledged}
+          onChange={(event) => {
+            props.setPropsRemovedAcknowledged(event.target.checked)
+            props.setTestAreaAcknowledged(event.target.checked)
+          }}
           data-testid={`${props.testIdPrefix}-props-ack`}
         />
-        <span>Props removed</span>
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          checked={props.testAreaAcknowledged}
-          onChange={(event) => props.setTestAreaAcknowledged(event.target.checked)}
-          data-testid={`${props.testIdPrefix}-area-ack`}
-        />
-        <span>Area clear, craft restrained</span>
+        <span>Props off, area clear, craft restrained</span>
       </label>
     </div>
   )

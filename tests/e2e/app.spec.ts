@@ -445,9 +445,14 @@ test.describe('browser configurator regression flows', () => {
     // the throttle sliders in the live column beside it.
     await expect(page.getByTestId('motor-order-diagram')).toBeVisible()
     await page.getByTestId('motor-reorder-props-off-ack').check()
-    // The extra USB-bench acknowledgement is gated to a physical web-serial
-    // link, so it must NOT appear (or block the test) over the demo transport.
+    // ONE safety box, full stop. Motor testing used to need the props/area box
+    // AND, over a physical USB link, a second USB-bench box further down the
+    // page — two boxes do not make the hazard twice as acknowledged, and the
+    // second one was where the Run button quietly stayed disabled. The three
+    // acknowledgement names still exist in state but are one value now, so
+    // the USB box has no reason to render on any transport.
     await expect(page.getByTestId('motor-test-usb-ack')).toHaveCount(0)
+    await expect(page.locator('[data-testid$="-ack"] input[type="checkbox"]')).toHaveCount(1)
     await page.getByTestId('motor-test-sliders').getByText('ALL', { exact: true }).click()
     await expect(page.getByRole('button', { name: 'Run Motor Test' })).toBeEnabled()
   })

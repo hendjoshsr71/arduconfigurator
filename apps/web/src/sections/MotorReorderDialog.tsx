@@ -9,6 +9,7 @@
 // the call site, so this renders unconditionally. Behavior-preserving.
 
 import type { ReactElement } from 'react'
+import { InfoDot } from '../views/InfoDot'
 
 import { buttonStyle } from '@arduconfig/ui-kit'
 import type { ConfiguratorSnapshot, ServoOutputAssignment } from '@arduconfig/ardupilot-core'
@@ -187,7 +188,7 @@ export function MotorReorderDialog({
               }}
               disabled={busyAction !== undefined || snapshot.motorTest.status === 'requested' || snapshot.motorTest.status === 'running'}
             />
-            <span>Props are off and the vehicle is restrained with the test area clear.</span>
+            <span>Props are off, the vehicle is restrained, and the test area is clear.</span>
           </label>
         </div>
 
@@ -422,10 +423,13 @@ export function MotorReorderDialog({
                 </div>
               ) : null}
 
-              <ul className="output-note-list">
-                <li>This changes which output pin carries each motor function. It does not infer or change ESC spin direction.</li>
-                <li>After applying a new order, rerun the guarded direction check and confirm the correct motor spins.</li>
-              </ul>
+              <p className="bf-note motor-reorder__note">
+                Reorder changes output pins, not spin direction.{' '}
+                <InfoDot label="About reordering motors" testId="motor-reorder-info" wide>
+                  <span className="info-dot-line">This changes which output pin carries each motor function. It does not infer or change ESC spin direction.</span>
+                  <span className="info-dot-line">After applying a new order, rerun the guarded direction check and confirm the correct motor spins.</span>
+                </InfoDot>
+              </p>
 
               {guidedReorderCompleted && motorReorderChangedCount === 0 ? (
                 <div className="bf-note" data-testid="motor-reorder-no-changes">

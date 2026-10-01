@@ -4290,15 +4290,15 @@ body.is-status-dash-dragging {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 180px;
-  padding: 24px;
+  min-height: 140px;
+  padding: 16px;
   text-align: center;
 }
 .motor-mixer-preview--empty p {
   margin: 0;
   max-width: 34ch;
   color: var(--text-muted);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   line-height: 1.5;
 }
 
@@ -4362,7 +4362,7 @@ body.is-status-dash-dragging {
 .motor-mixer-preview__motor-number {
   fill: var(--text);
   font-family: var(--font-data);
-  font-size: var(--text-3xl);
+  font-size: var(--text-2xl);
   font-weight: 700;
 }
 

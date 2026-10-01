@@ -8803,35 +8803,23 @@ export function App() {
                                 </div>
 
                                 <div className="motor-test-acknowledgments setup-wizard__task-acknowledgments">
-                                  <label>
+                                  {/* One acknowledgement. This step rendered three boxes —
+                                      props, area, and a USB-bench extra — for what is one
+                                      decision, and the Motors tab renders the same state as one
+                                      box; three here that tick together would read as a glitch. */}
+                                  <label data-testid="guided-motor-test-ack">
                                     <input
                                       type="checkbox"
-                                      checked={propsRemovedAcknowledged}
-                                      onChange={(event) => setPropsRemovedAcknowledged(event.target.checked)}
+                                      checked={propsRemovedAcknowledged && testAreaAcknowledged && (!motorTestOverUsb || usbBenchAcknowledged)}
+                                      onChange={(event) => {
+                                        setPropsRemovedAcknowledged(event.target.checked)
+                                        setTestAreaAcknowledged(event.target.checked)
+                                        setUsbBenchAcknowledged(event.target.checked)
+                                      }}
                                       disabled={busyAction !== undefined || snapshot.motorTest.status === 'requested' || snapshot.motorTest.status === 'running'}
                                     />
-                                    <span>All propellers are removed.</span>
+                                    <span>Props are off, the vehicle is restrained, and the test area is clear.</span>
                                   </label>
-                                  <label>
-                                    <input
-                                      type="checkbox"
-                                      checked={testAreaAcknowledged}
-                                      onChange={(event) => setTestAreaAcknowledged(event.target.checked)}
-                                      disabled={busyAction !== undefined || snapshot.motorTest.status === 'requested' || snapshot.motorTest.status === 'running'}
-                                    />
-                                    <span>The vehicle is restrained and the area is clear.</span>
-                                  </label>
-                                  {motorTestOverUsb ? (
-                                    <label className="motor-test-acknowledgments__usb" data-testid="guided-motor-test-usb-ack">
-                                      <input
-                                        type="checkbox"
-                                        checked={usbBenchAcknowledged}
-                                        onChange={(event) => setUsbBenchAcknowledged(event.target.checked)}
-                                        disabled={busyAction !== undefined || snapshot.motorTest.status === 'requested' || snapshot.motorTest.status === 'running'}
-                                      />
-                                      <span>USB connection detected — craft is on the bench, props off.</span>
-                                    </label>
-                                  ) : null}
                                 </div>
 
                                 <ul className="output-note-list">

@@ -38,6 +38,7 @@ import type { buildVehicleOutputSummary } from '../view-models/vehicle-output-su
 import type { createMotorPreviewNodes } from '../view-models/motor-preview'
 import { outputKindLabel, toneForOutputKind } from '../device-display'
 import { ALL_MOTOR_TEST_OUTPUT, ALL_MOTOR_TEST_OUTPUT_SIMULTANEOUS } from '../motor-test-helpers'
+import { InfoDot } from '../views/InfoDot'
 import { MotorTestSliders } from '../motor-test-sliders'
 import {
   type SpinWizardState,
@@ -303,8 +304,7 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
     setPropsRemovedAcknowledged,
     testAreaAcknowledged,
     setTestAreaAcknowledged,
-    usbBenchAcknowledged,
-    setUsbBenchAcknowledged
+    usbBenchAcknowledged
   } = safetyAcks
 
   const {
@@ -553,7 +553,7 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
         title={activeViewId === 'motors' ? 'Motors' : 'Servos'}
         subtitle={
           activeViewId === 'motors'
-            ? 'Frame class, output map, direction & test, ESC protocol, and verification review for propulsion motors.'
+            ? 'Order, direction, ESC protocol and test for the propulsion motors.'
             // Short on purpose: the table below says what it is, and the tab
             // is called Servos. The long version restated the heading.
             : 'Assign a function to each output and set its PWM range, trim and direction.'
@@ -686,7 +686,9 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
                         <div className="switch-exercise-card__header">
                           <div>
                             <strong>Frame</strong>
-                            <p>Airframe class + layout. Changing these restructures the motor outputs — reboot and re-verify motor order/spin afterwards.</p>
+                            <InfoDot label="About frame class and type" testId="outputs-info-frame" wide>
+                              <span className="info-dot-line">Airframe class and layout. Changing them restructures the motor outputs — reboot, then re-verify motor order and spin.</span>
+                            </InfoDot>
                           </div>
                           <StatusBadge tone={toneForScopedDraftReview(frameStagedDrafts.length, 0)}>
                             {frameStagedDrafts.length > 0 ? `${frameStagedDrafts.length} staged` : 'in sync'}
@@ -736,7 +738,9 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
                       <div className="switch-exercise-card__header">
                         <div>
                           <strong>ESC & output settings</strong>
-                          <p>Adjust the key motor protocol and spin-threshold values directly from Outputs.</p>
+                          <InfoDot label="About ESC and output settings" testId="outputs-info-esc" wide>
+                            <span className="info-dot-line">Motor protocol and spin thresholds, edited here rather than from the raw parameter table.</span>
+                          </InfoDot>
                         </div>
                         <StatusBadge tone={toneForScopedDraftReview(outputReviewStagedDrafts.length, outputReviewInvalidDrafts.length)}>
                           {outputReviewInvalidDrafts.length > 0
@@ -841,10 +845,7 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
                       <div className="spin-wizard-launcher" data-testid="spin-threshold-wizard-launcher">
                         <div>
                           <strong>Spin thresholds</strong>
-                          <p>
-                            Measure where your motors actually break away instead of trusting the library
-                            defaults, then stage <code>MOT_SPIN_ARM</code> and <code>MOT_SPIN_MIN</code> from it.
-                          </p>
+                          <InfoDot label="About spin thresholds" testId="outputs-info-spin-thresholds" wide><span className="info-dot-line">Measures where your motors actually break away instead of trusting library defaults, then stages <code>MOT_SPIN_ARM</code> and <code>MOT_SPIN_MIN</code> from it.</span></InfoDot>
                         </div>
                         <StatusBadge tone={spinWizard.status === 'ready' ? 'success' : spinWizard.status === 'failed' ? 'danger' : 'neutral'}>
                           {spinWizard.status === 'idle'
@@ -866,9 +867,7 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
                           disabled={spinWizardAckMissing}
                           title={
                             spinWizardAckMissing
-                              ? motorTestOverUsb && !usbBenchAcknowledged && propsRemovedAcknowledged && testAreaAcknowledged
-                                ? 'Confirm the craft is on the bench (USB connection detected) before measuring.'
-                                : 'Confirm props are off and the vehicle is restrained before measuring.'
+                              ? 'Confirm props are off and the vehicle is restrained before measuring.'
                               : undefined
                           }
                           onClick={() => setSpinWizardOpen(true)}
@@ -1017,20 +1016,10 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
                             }}
                             disabled={busyAction !== undefined || snapshot.motorTest.status === 'requested' || snapshot.motorTest.status === 'running'}
                           />
-                          <span>Props are off and the vehicle is restrained with the test area clear.</span>
+                          <span>Props are off, the vehicle is restrained, and the test area is clear.</span>
                         </label>
                         )}
-                        {motorTestOverUsb ? (
-                          <label className="motor-test-acknowledgments__usb" data-testid="motor-test-usb-ack">
-                            <input
-                              type="checkbox"
-                              checked={usbBenchAcknowledged}
-                              onChange={(event) => setUsbBenchAcknowledged(event.target.checked)}
-                              disabled={busyAction !== undefined || snapshot.motorTest.status === 'requested' || snapshot.motorTest.status === 'running'}
-                            />
-                            <span>USB connection detected — I confirm the craft is on the bench and will not arm/spin a flight-ready aircraft.</span>
-                          </label>
-                        ) : null}
+                        {/* The USB-bench box lived here. It is the same acknowledgement now. */}
                       </div>
                       <div className="motor-direction-layout">
                         <div className="motor-direction-layout__sliders">
@@ -1258,7 +1247,7 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
                     <div className="switch-exercise-card__header">
                       <div>
                         <strong>Output changes in review</strong>
-                        <p>Keep motor mapping, ESC settings, and notification edits grouped here before you apply each scope to the controller.</p>
+                        <InfoDot label="About the output review" testId="outputs-info-review" wide><span className="info-dot-line">Motor mapping, ESC settings and notification edits stay grouped here; each scope applies to the controller on its own.</span></InfoDot>
                       </div>
                       <StatusBadge tone={toneForScopedDraftReview(totalOutputStagedDrafts, totalOutputInvalidDrafts)}>
                         {totalOutputInvalidDrafts > 0
@@ -1305,7 +1294,7 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
                     <div className="outputs-inline-toggle">
                       <div>
                         <strong>Motor setup drafts</strong>
-                        <p>Review or apply the staged SERVO function remap changes directly from the review deck, or jump back into Motor Setup.</p>
+                        <InfoDot label="About motor setup drafts" testId="outputs-info-motor-drafts" wide><span className="info-dot-line">Staged SERVO function remaps. Apply or discard them here, or go back into Motor Setup.</span></InfoDot>
                       </div>
                       <div className="outputs-inline-toggle__actions">
                         <button style={buttonStyle()} onClick={() => setOutputTaskOverride('motor-setup')}>
@@ -1342,7 +1331,7 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
                     <div className="outputs-inline-toggle">
                       <div>
                         <strong>ESC & protocol drafts</strong>
-                        <p>Motor protocol and spin-threshold changes remain grouped here so you can apply or discard them without leaving review.</p>
+                        <InfoDot label="About ESC & protocol drafts" testId="outputs-info-esc-drafts" wide><span className="info-dot-line">Motor protocol and spin-threshold changes, kept together so they apply or discard as one.</span></InfoDot>
                       </div>
                       <div className="outputs-inline-toggle__actions">
                         <button style={buttonStyle()} onClick={() => setOutputTaskOverride('esc-protocol')}>
@@ -1377,7 +1366,7 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
                     <div className="outputs-inline-toggle">
                       <div>
                         <strong>Additional output settings</strong>
-                        <p>Metadata-backed output settings remain available here so no Outputs capability gets buried or dropped.</p>
+                        <InfoDot label="About additional output settings" testId="outputs-info-additional" wide><span className="info-dot-line">Every other output parameter the firmware reports, so nothing is buried or dropped.</span></InfoDot>
                       </div>
                       <div className="outputs-inline-toggle__actions">
                         <button style={buttonStyle()} onClick={() => setOutputTaskOverride('peripherals')}>
@@ -1471,12 +1460,7 @@ export function OutputsSection(props: OutputsSectionProps): ReactElement {
             <div className="board-media-lightbox__header">
               <div>
                 <strong>Spin thresholds</strong>
-                <p>
-                  Every motor spins at a rising output until you say they are all turning.{' '}
-                  <code>MOT_SPIN_ARM</code> lands one margin above that and <code>MOT_SPIN_MIN</code>{' '}
-                  another above ARM, which is the order the firmware requires. Nothing is written
-                  until you stage the values.
-                </p>
+                <InfoDot label="How spin thresholds are measured" testId="outputs-info-spin-wizard" wide><span className="info-dot-line">Every motor spins at a rising output until you say they are all turning.</span><span className="info-dot-line"><code>MOT_SPIN_ARM</code> lands one margin above that and <code>MOT_SPIN_MIN</code> one above ARM — the order the firmware requires. Nothing is written until you stage the values.</span></InfoDot>
               </div>
               <StatusBadge tone={spinWizard.status === 'ready' ? 'success' : spinWizard.status === 'failed' ? 'danger' : 'neutral'}>
                 {spinWizard.status === 'idle'

@@ -1308,8 +1308,12 @@ test.describe('Calibration tab — motor-spin (ESC)', () => {
     // ...but the safety acks are, so battery-current calibration stays usable.
     await expect(page.getByTestId('calibration-card-battery-current')).toBeVisible()
     await expect(page.getByTestId('cal-motor-acks')).toBeVisible()
+    // ONE box. Props-removed and area-clear used to be two checkboxes here
+    // while Motors showed one for the same state; the second was never a
+    // second decision.
     await expect(page.getByTestId('cal-props-ack')).toBeVisible()
-    await expect(page.getByTestId('cal-area-ack')).toBeVisible()
+    await expect(page.getByTestId('cal-area-ack')).toHaveCount(0)
+    await expect(page.getByTestId('cal-motor-acks').locator('input[type="checkbox"]')).toHaveCount(1)
     // The gate sits with the button it unlocks, not in a separate card.
     await expect(page.getByTestId('calibration-card-motor-safety')).toHaveCount(0)
     await expect(page.getByTestId('battery-current-spin-motors')).toBeVisible()
