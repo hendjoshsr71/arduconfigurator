@@ -115,7 +115,6 @@ export function VtxView(props: VtxViewProps) {
     <section className="grid one-up">
       <Panel
         title="VTX"
-        subtitle="Use a dedicated VTX workflow while keeping the actual ArduPilot-backed controls visible and honest."
       >
         <div className="bf-tab-stack">
           {headerNav}

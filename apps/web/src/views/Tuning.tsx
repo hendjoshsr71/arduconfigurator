@@ -41,7 +41,6 @@ export function TuningView(props: TuningViewProps) {
     <section className="grid one-up tuning-page">
       <Panel
         title="Tuning"
-        subtitle="Curated ArduPilot rate, gain, and filter tuning."
       >
         <div className="telemetry-stack telemetry-stack--tuning">
           {noticeSlot}

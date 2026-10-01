@@ -325,7 +325,8 @@ test.describe('browser configurator regression flows', () => {
     await expect(page.getByTestId('motor-reorder-lightbox-tabs')).toBeVisible()
     await expect(page.getByTestId('motor-reorder-lightbox-tab-reorder')).toBeVisible()
     await expect(page.getByTestId('motor-reorder-lightbox-tab-direction')).toBeVisible()
-    await expect(page.getByTestId('motor-reorder-apply')).toBeVisible()
+    // The apply bar renders only once something is staged.
+    await expect(page.getByTestId('motor-reorder-apply')).toHaveCount(0)
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
@@ -334,11 +335,10 @@ test.describe('browser configurator regression flows', () => {
     await openView(page, 'motors')
 
     const apply = page.getByTestId('motor-reorder-apply')
-    await expect(apply).toBeVisible()
-    // Single "Apply and reboot" button (no separate Reboot FC). Disabled until
-    // something is staged.
+    // Single "Apply and reboot" button (no separate Reboot FC). Not rendered
+    // at all until something is staged.
     await expect(page.getByTestId('motor-reorder-reboot')).toHaveCount(0)
-    await expect(apply).toBeDisabled()
+    await expect(apply).toHaveCount(0)
 
     // Stage a reverse-direction bit from the Direction sub-tab.
     await page.getByTestId('motor-reorder-lightbox-tab-direction').click()
@@ -454,7 +454,8 @@ test.describe('browser configurator regression flows', () => {
     await expect(page.getByTestId('motor-test-usb-ack')).toHaveCount(0)
     await expect(page.locator('[data-testid$="-ack"] input[type="checkbox"]')).toHaveCount(1)
     await page.getByTestId('motor-test-sliders').getByText('ALL', { exact: true }).click()
-    await expect(page.getByRole('button', { name: 'Run Motor Test' })).toBeEnabled()
+    // One Test button now; it carries the full gate the Run button used to.
+    await expect(page.getByTestId('motor-test-sliders-test')).toBeEnabled()
   })
 
   test('motor-test sliders are draggable by pointer (the finger-drag path on phones)', async ({ page }) => {
@@ -703,8 +704,8 @@ test.describe('browser configurator regression flows', () => {
     await expect(page.getByText('LED & buzzer notifications', { exact: true })).toBeVisible()
     await openView(page, 'motors')
     await page.getByTestId('motor-reorder-props-off-ack').check()
-    // Motor-test surface reachable (the Run control + sliders render).
-    await expect(page.getByRole('button', { name: 'Run Motor Test' })).toBeVisible()
+    // Motor-test surface reachable (the sliders with their Test button render).
+    await expect(page.getByTestId('motor-test-sliders-test')).toBeVisible()
     await expect(page.getByTestId('motor-test-sliders')).toBeVisible()
 
     // Power now lives under Config's Power category. The failsafe-shaped knobs

@@ -22,6 +22,7 @@ import type { ParameterNotice } from '../hooks/use-parameter-feedback'
 import type { UsePortsViewResult } from '../hooks/use-ports-view'
 import { statusToneLabel } from '../status-tone'
 import { MavlinkSigningPanel } from '../mavlink-signing-panel'
+import { ParamIdHint } from '../views/ScopedField'
 import { normalizeBitmaskValue } from '../parameter-format'
 import { describeBitmaskSelections, hasBitmaskFlag, toggleBitmaskFlag } from '../selectors/bitmask'
 import type { SerialPortViewModel } from '../serial-port-helpers'
@@ -171,7 +172,6 @@ export function PortsSection(props: PortsSectionProps): ReactElement {
 	        <div id="setup-panel-ports">
 	          <Panel
 	            title="Ports"
-	            subtitle="Assign serial roles, baud rates, and hardware flow-control settings without dropping into the raw parameter table."
 	          >
 		          <div className="telemetry-stack telemetry-stack--ports">
 		            <div className="ports-workspace">
@@ -182,13 +182,13 @@ export function PortsSection(props: PortsSectionProps): ReactElement {
                           <h3>Port matrix</h3>
                         </div>
                         <div className="ports-surface__header-actions">
+                          {portsInvalidDrafts.length > 0 || portsStagedDrafts.length > 0 ? (
                           <StatusBadge tone={toneForScopedDraftReview(portsStagedDrafts.length, portsInvalidDrafts.length)}>
                             {portsInvalidDrafts.length > 0
                               ? `${portsInvalidDrafts.length} invalid`
-                              : portsStagedDrafts.length > 0
-                                ? `${portsStagedDrafts.length} staged`
-                                : 'in sync'}
+                              : `${portsStagedDrafts.length} staged`}
                           </StatusBadge>
+                          ) : null}
                           {serialPortViewModels.length > visibleSerialPortViewModels.length || showAllSerialPorts ? (
                             <button
                               style={buttonStyle()}
@@ -439,16 +439,11 @@ export function PortsSection(props: PortsSectionProps): ReactElement {
                                       {baudParameter ? (
                                         <div className="ports-matrix-row__baud">
                                           <label className="scoped-editor-field scoped-editor-field--compact">
-                                            <span>Baud</span>
                                             {/* The port matrix hand-rolls its fields instead of using the
-                                                Scoped* components, so it doesn't inherit their param-name
-                                                hint — add it here so Baud/Flow/Options aren't the only
-                                                editable knobs in the app with no visible raw param name.
-                                                aria-hidden for the same reason ScopedField does it: a
-                                                <label> folds all its text into the control's a11y name. */}
-                                            <small className="scoped-editor-field__param-id" aria-hidden="true">
-                                              {baudParameter.id}
-                                            </small>
+                                                Scoped* components, so it doesn't inherit their param "i"
+                                                — add it here so Baud/Flow/Options aren't the only
+                                                editable knobs in the app with no route to the raw name. */}
+                                            <span>Baud<ParamIdHint parameter={baudParameter} /></span>
                                             <select
                                               value={selectedBaudPresetValue(currentBaudRate)}
                                               onChange={(event) => {
@@ -515,10 +510,7 @@ export function PortsSection(props: PortsSectionProps): ReactElement {
                                     <div className="ports-matrix-row__cell">
                                       {flowControlParameter ? (
                                         <label className="scoped-editor-field scoped-editor-field--compact">
-                                          <span>Flow</span>
-                                          <small className="scoped-editor-field__param-id" aria-hidden="true">
-                                            {flowControlParameter.id}
-                                          </small>
+                                          <span>Flow<ParamIdHint parameter={flowControlParameter} /></span>
                                           <select
                                             value={editedValues[flowControlParameter.id] ?? String(port.flowControlValue ?? '')}
                                             onChange={(event) =>
@@ -544,9 +536,7 @@ export function PortsSection(props: PortsSectionProps): ReactElement {
                                         <div className="ports-matrix-row__options-header">
                                           <strong>
                                             Serial options
-                                            {optionsParameter ? (
-                                              <small className="scoped-editor-field__param-id">{optionsParameter.id}</small>
-                                            ) : null}
+                                            {optionsParameter ? <ParamIdHint parameter={optionsParameter} /> : null}
                                           </strong>
                                           {optionsParameter ? (
                                             <button

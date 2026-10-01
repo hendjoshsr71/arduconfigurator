@@ -305,7 +305,6 @@ import { CalibrationSection } from './sections/CalibrationSection'
 import { OsdSection } from './sections/OsdSection'
 import { OutputsSection } from './sections/OutputsSection'
 import { ParametersSection } from './sections/ParametersSection'
-import { GpsPeripheralCards } from './sections/GpsPeripheralCards'
 import { PortsSection } from './sections/PortsSection'
 import { PresetsSection } from './sections/PresetsSection'
 import { ReceiverSection } from './sections/ReceiverSection'
@@ -6908,7 +6907,7 @@ export function App() {
     )
   }
 
-  function renderMetadataParameterField(parameter: ParameterState, infoTestIdPrefix = 'metadata-field-info') {
+  function renderMetadataParameterField(parameter: ParameterState) {
     // Shared metadata-driven editor used across Power additional
     // settings, Output additional settings, Tuning, and other generic
     // surfaces. The ScopedField dispatcher picks: bitmask -> per-bit
@@ -6932,10 +6931,8 @@ export function App() {
 
     // Every "Additional settings" card in the app (Servos ▸ Peripherals &
     // Alerts, Power, Failsafe, Ports, Receiver, guided Setup) funnels through
-    // this one renderer, so the per-parameter "i" is attached here rather than
-    // at each of those call sites. The bubble is a SIBLING of the editor, not a
-    // child: ScopedField wraps its control in a <label>, and an anchor (the
-    // wiki link) nested inside a <label> is both invalid and unclickable.
+    // this one renderer. The per-parameter "i" is ScopedField's own inline dot
+    // (raw id, description, range); a sibling bubble here made two per field.
     return (
       <div key={parameter.id} className="config-section__field-row">
         <ScopedField
@@ -6945,12 +6942,6 @@ export function App() {
           onChange={(paramId, value) => setDraft(paramId, value)}
           draftStatusById={parameterDraftById}
           stepFallback={parameter.definition?.step ?? 1}
-        />
-        <ParamInfoBubble
-          paramId={parameter.id}
-          label={parameter.definition?.label ?? parameter.id}
-          description={parameter.definition?.description}
-          testId={`${infoTestIdPrefix}-${parameter.id}`}
         />
       </div>
     )
@@ -7045,12 +7036,11 @@ export function App() {
     if (/^NET_(?:IPADDR|GWADDR|REMPPP_IP|P\d+_IP)[1-3]$/.test(parameter.id)) {
       return null
     }
-    // Plain NET_ params go through the generic renderer, which now attaches the
-    // "i" itself — wrapping again here would render two bubbles per field. Pass
-    // the networking test-id prefix through so `networking-field-info-*` hooks
-    // keep resolving. withNetworkingFieldInfo stays for the composed
-    // dotted-quad/MAC editors above, which the generic renderer never sees.
-    return renderMetadataParameterField(parameter, 'networking-field-info')
+    // Plain NET_ params go through the generic renderer, whose ScopedField
+    // carries the "i" itself — wrapping again here would render two dots per
+    // field. withNetworkingFieldInfo stays for the composed dotted-quad/MAC
+    // editors above, which hand-roll their label and have no dot of their own.
+    return renderMetadataParameterField(parameter)
   }
 
   function handleStageTuningParameterValue(parameter: ParameterState, nextValue: string): void {
@@ -9825,7 +9815,6 @@ export function App() {
             onApplyAndSave={(nodeId, writes) => { void runtime?.applyAndSaveCanBusParameters(nodeId, writes) }}
             paramMetadata={(name) => metadataCatalog.parameters[name] ?? AP_PERIPH_PARAM_METADATA[name]}
             title="DroneNet peripherals"
-            subtitle="Configure a DroneCAN peripheral's network settings — its NET_ parameters, written over the CAN bus and saved to the node. Start the bus to discover nodes; no need to leave this tab."
           />
         }
       />
@@ -10253,12 +10242,9 @@ export function App() {
                     ...section,
                     footer: (
                       <>
-                        {/* Moved off Ports: whether a configured driver is
-                            actually talking is a GPS question, not a UART one. */}
-                        <GpsPeripheralCards
-                          snapshot={snapshot}
-                          gpsPeripheralViewModels={gpsPeripheralViewModels}
-                        />
+                        {/* The Primary / Secondary GPS status cards are gone:
+                            the driver is the GPS type field above and the live
+                            fix is the map below, so the cards said both twice. */}
                         <LiveGpsMapCard
                           snapshot={snapshot}
                           title="GPS map"
@@ -10377,8 +10363,7 @@ export function App() {
             {
               id: 'flow-lidar',
               title: 'Flow & Lidar',
-              description:
-                'Rangefinder/lidar driver and range limits, plus optical flow alignment and scaling.',
+              description: '',
               category: 'flow-lidar' as const,
               wide: true,
               fields: [],
@@ -10395,7 +10380,8 @@ export function App() {
                   ) : (
                     renderAdditionalSettingsCard(
                       'Flow & Lidar',
-                      'Rangefinder/lidar driver and range limits, plus optical flow alignment and scaling. Flow needs a height reference, which is almost always the downward rangefinder configured here.',
+                      // No blurb: the field labels say what the card holds.
+                      '',
                       flowLidarGroups,
                       flowLidarDraftEntries,
                       flowLidarStagedDrafts,

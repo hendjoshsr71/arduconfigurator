@@ -262,13 +262,20 @@ export function useConfigSections(snapshot: ConfiguratorSnapshot) {
       id: 'gps',
       title: 'GPS behavior',
       description: 'GPS driver type + auto-config + update rate, plus multi-GPS behavior (which receiver is primary and how the FC switches between them).',
+      // Display order packs the card: the four one-line fields (two selects,
+      // the rate chips, the primary pick) share the first row, the two tall
+      // chip groups share the second, and the GNSS mask is in the advanced
+      // fold. Writes are keyed by id, unaffected by order.
       fields: [
         { paramId: 'GPS_TYPE', label: 'GPS type', digits: 0 },
-        { paramId: 'GPS_AUTO_CONFIG', label: 'Auto config', digits: 0 },
+        // The second receiver's driver is a GPS setting like the first one's,
+        // not an "additional" one; it was the only row left in that card.
+        { paramId: 'GPS_TYPE2', label: 'Secondary GPS type', digits: 0 },
         { paramId: 'GPS_RATE_MS', label: 'Update rate', unit: 'ms', digits: 0 },
-        { paramId: 'GPS_GNSS_MODE', label: 'GNSS mode', digits: 0 },
+        { paramId: 'GPS_PRIMARY', label: 'Primary GPS', digits: 0 },
+        { paramId: 'GPS_AUTO_CONFIG', label: 'Auto config', digits: 0 },
         { paramId: 'GPS_AUTO_SWITCH', label: 'Auto switch', digits: 0 },
-        { paramId: 'GPS_PRIMARY', label: 'Primary GPS', digits: 0 }
+        { paramId: 'GPS_GNSS_MODE', label: 'GNSS mode', digits: 0 }
       ]
     },
     {

@@ -480,7 +480,6 @@ export function CalibrationSection(props: CalibrationSectionProps): ReactElement
         <section className="grid one-up" id="setup-panel-calibration">
           <Panel
             title="Calibration"
-            subtitle="Bench sensor calibration, power measurement, and the ones that need a flight."
           >
             <div className="tab-strip" data-testid="calibration-tab-nav" role="tablist">
               {([

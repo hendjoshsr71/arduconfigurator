@@ -790,10 +790,12 @@ test.describe('Ports view', () => {
     await page.goto('/')
     await connectViaHeader(page)
     await openView(page, 'ports')
-    const hints = page.locator('.ports-matrix .scoped-editor-field__param-id')
-    await expect(hints.filter({ hasText: /^SERIAL\d+_BAUD$/ }).first()).toBeVisible()
-    await expect(hints.filter({ hasText: /_RTSCTS$/ }).first()).toBeVisible()
-    await expect(hints.filter({ hasText: /^SERIAL\d+_OPTIONS$/ }).first()).toBeVisible()
+    // The raw name is the first line of each field's "i" tip now, not a
+    // caption under the label; the dot's test id carries the parameter id.
+    await expect(page.locator('.ports-matrix [data-testid^="param-info-SERIAL"][data-testid$="_BAUD"]').first()).toBeVisible()
+    // Flow control is a BRD_SERn_RTSCTS param, not a SERIALn_ one.
+    await expect(page.locator('.ports-matrix [data-testid^="param-info-BRD_SER"][data-testid$="_RTSCTS"]').first()).toBeVisible()
+    await expect(page.locator('.ports-matrix [data-testid^="param-info-SERIAL"][data-testid$="_OPTIONS"]').first()).toBeVisible()
   })
 
   test('a DisplayPort / VTX-control protocol shows what it also auto-configures', async ({ page }) => {
@@ -824,13 +826,14 @@ test.describe('Ports view', () => {
 
     await openView(page, 'peripherals')
     await page.locator('.tab-strip__tab', { hasText: 'GPS' }).first().click()
+    // GPS_TYPE2 is a curated field of the GPS section now, under GPS_TYPE.
+    await expect(page.getByTestId('param-info-GPS_TYPE2')).toBeVisible()
+    // The "Additional GPS settings" residue renders only when the category has
+    // something a curated field does not already show; on the demo set that
+    // is nothing, so the card is gone. Whatever it holds elsewhere, it never
+    // repeats GPS_TYPE, GPS_TYPE2 or CAM_TRIGG_TYPE.
     const moved = page.getByTestId('metadata-settings-section-peripherals')
-    await expect(moved).toBeVisible()
-    // The residue only: anything a curated field already renders (GPS_TYPE on
-    // this very sub-tab, CAM_TRIGG_TYPE on Config) must not appear twice.
-    // The param id is stamped in three places on a row (field hint, info
-    // bubble, section summary), so take the first rather than the set.
-    await expect(moved.getByText('GPS_TYPE2', { exact: true }).first()).toBeVisible()
+    await expect(moved.getByTestId('param-info-GPS_TYPE2')).toHaveCount(0)
     await expect(moved.getByText('GPS_TYPE', { exact: true })).toHaveCount(0)
     await expect(moved.getByText('CAM_TRIGG_TYPE', { exact: true })).toHaveCount(0)
   })
@@ -850,13 +853,10 @@ test.describe('Ports view', () => {
 
     await openView(page, 'peripherals')
     await page.locator('.tab-strip__tab', { hasText: 'GPS' }).first().click()
-    const cards = page.getByTestId('peripherals-gps-cards')
-    await expect(cards).toBeVisible()
-    await expect(cards.getByText('Primary GPS', { exact: true })).toBeVisible()
-    // Status only. GPS_TYPE is a labelled field on this same sub-tab and
-    // GPS_TYPE2 sits in Additional GPS settings; a third editor for the pair is
-    // the duplication this whole move is undoing.
-    await expect(cards.locator('select')).toHaveCount(0)
+    // The status cards are gone from here too: the driver is the GPS type
+    // field and the live fix is the map, so the cards said both a second time.
+    await expect(page.getByTestId('peripherals-gps-cards')).toHaveCount(0)
+    await expect(page.getByTestId('param-info-GPS_TYPE')).toBeVisible()
   })
 })
 
@@ -912,8 +912,10 @@ test.describe('Networking view (Expert + networking-capable FC)', () => {
     await expect(page.getByRole('button', { name: /Apply Network Changes \(\d+\)/ })).toBeVisible()
 
     // Per-param "i" info affordance — each NET_ field carries one (hover/focus
-    // reveals the ArduPilot description) so operators know what each param does.
-    await expect(page.getByTestId('networking-field-info-NET_ENABLE')).toBeVisible()
+    // reveals the raw id and the ArduPilot description) so operators know what
+    // each param does. Plain NET_ params render through ScopedField, so it is
+    // the field's own inline dot.
+    await expect(page.getByTestId('param-info-NET_ENABLE')).toBeVisible()
 
     // DroneNet tab: switching to it auto-connects over CAN and discovers the demo
     // DroneNet peripheral — no CAN tab, no manual Start needed.
@@ -2434,12 +2436,12 @@ test.describe('Config view', () => {
     // (correctly) says DShot rate is a multiple of the main loop rate.
     await page.getByTestId('config-category-airframe').click()
     await expect(
-      page.getByTestId('config-section-esc-dshot').getByTestId('config-field-info-SCHED_LOOP_RATE')
+      page.getByTestId('config-section-esc-dshot').getByTestId('param-info-SCHED_LOOP_RATE')
     ).toHaveCount(0)
     // ...and it is still reachable where it now lives.
     await page.getByTestId('config-category-system').click()
     await expect(
-      page.getByTestId('config-section-system-rates').getByTestId('config-field-info-SCHED_LOOP_RATE')
+      page.getByTestId('config-section-system-rates').getByTestId('param-info-SCHED_LOOP_RATE')
     ).toBeVisible()
     // Fast-rate thread is build-gated: the demo Copter mock does not stream
     // FSTRATE_*, so the Fast loop rate section must never render.
@@ -2459,7 +2461,7 @@ test.describe('Config view', () => {
     // DISBLMSK are in the card's Advanced fold — open it first.
     await compass.getByTestId('config-advanced-compass').click()
     for (const id of ['COMPASS_EXTERNAL', 'COMPASS_ORIENT', 'COMPASS_AUTO_ROT', 'COMPASS_DISBLMSK']) {
-      await expect(compass.locator('.scoped-editor-field__param-id', { hasText: id }).first()).toBeVisible()
+      await expect(compass.getByTestId(`param-info-${id}`).first()).toBeVisible()
     }
     // Editing a compass field stages into the Config apply scope.
     await compass.getByText('Disabled', { exact: true }).first().click()
@@ -2624,7 +2626,8 @@ test.describe('Config view', () => {
     await expect(page.getByTestId('session-vehicle-name')).toHaveText('ArduCopter', { timeout: VEHICLE_CONNECT_TIMEOUT })
     await page.getByTestId('view-button-motors').click()
 
-    const readout = page.getByTestId('esc-rpm-readout')
+    // RPM prints under each slider column now, not in a table of its own.
+    const readout = page.getByTestId('motor-test-sliders')
     await readout.scrollIntoViewIfNeeded()
     await expect(readout).toHaveAttribute('data-status', 'live', { timeout: 15000 })
     // Four motors, four distinct RPMs — identical numbers would hide a decode
@@ -2664,24 +2667,6 @@ test.describe('Config view', () => {
       expect(box, `#${id} is not rendered on the Motors tab`).not.toBeNull()
       expect(box!.height, `#${id} has no height to scroll to`).toBeGreaterThan(0)
     }
-  })
-
-  test('the Test panel points at the safety ack it no longer contains', async ({ page }) => {
-    // One ack for the whole page now, pinned at the top, while the Test panel
-    // is a sticky column beside it -- so the control that unblocks Run Motor
-    // Test can sit off-screen above the operator reading why it is blocked.
-    await page.goto('/')
-    await connectViaHeader(page)
-    await openView(page, 'motors')
-
-    const goToAck = page.getByTestId('motor-test-goto-ack')
-    await expect(goToAck).toBeVisible()
-    await goToAck.click()
-    await expect(page.getByTestId('motor-reorder-props-off-ack')).toBeInViewport()
-
-    // Once acknowledged there is nothing to point at.
-    await page.getByTestId('motor-reorder-props-off-ack').check()
-    await expect(goToAck).toHaveCount(0)
   })
 
   test('spin-threshold wizard measures a break-away point and derives both parameters', async ({ page }) => {
@@ -2821,8 +2806,9 @@ test.describe('Config view', () => {
     // FRAME_CLASS + FRAME_TYPE render as two enum selects.
     await expect(frame.locator('select')).toHaveCount(2)
     const apply = page.getByTestId('esc-frame-apply')
-    await expect(apply).toBeDisabled()
-    // Changing the frame type stages a draft and enables Apply Frame.
+    // No apply button until a draft exists.
+    await expect(apply).toHaveCount(0)
+    // Changing the frame type stages a draft and shows Apply Frame.
     await frame.locator('select').nth(1).selectOption('0') // Plus
     await expect(apply).toBeEnabled()
     await expect(apply).toContainText('Apply Frame (1)')
@@ -2931,17 +2917,18 @@ test.describe('Config view', () => {
     await page.getByTestId('transport-mode-select').selectOption('demo')
     await page.getByTestId('connect-button').click()
     await page.getByTestId('view-button-config').click()
-    // Pin the first field's bubble to ITS OWN test id rather than re-resolving
+    // Pin the first field's dot to ITS OWN test id rather than re-resolving
     // `.first()` on every step: the Config surface fills in as parameters sync,
-    // and a locator that re-resolves can end up hovering one bubble while
-    // asserting about another's tooltip.
-    const firstInfoId = await page.locator('[data-testid^="config-field-info-"]').first().getAttribute('data-testid')
+    // and a locator that re-resolves can end up hovering one dot while
+    // asserting about another's tooltip. The dot is the Scoped* field's own
+    // inline "i" (param-info-*), and its tip is a child of the dot.
+    const firstInfoId = await page.locator('[data-testid^="param-info-"]').first().getAttribute('data-testid')
     expect(firstInfoId).toBeTruthy()
     const info = page.getByTestId(firstInfoId!)
     await info.scrollIntoViewIfNeeded()
     await expect(info).toBeVisible()
     // Tooltip is hidden until hover, then reveals the param description.
-    const tip = info.locator('xpath=following-sibling::span[@role="tooltip"]')
+    const tip = info.locator('[role="tooltip"]')
     await expect(tip).toBeHidden()
     // The reveal is pure CSS :hover, so it is only as durable as the pointer
     // staying over the button — and this page is still laying itself out as
@@ -2956,30 +2943,24 @@ test.describe('Config view', () => {
     await expect(tip).not.toHaveText('')
   })
 
-  test('Config info bubble names the raw parameter and links our parameter reference', async ({ page }) => {
+  test('Config field info dot names the raw parameter, and there is only one dot per field', async ({ page }) => {
     await page.goto('/')
     await page.getByTestId('transport-mode-select').selectOption('demo')
     await page.getByTestId('connect-button').click()
     await page.getByTestId('view-button-config').click()
-    const info = page.getByTestId('config-field-info-FRAME_CLASS')
+    const info = page.getByTestId('param-info-FRAME_CLASS')
     await info.scrollIntoViewIfNeeded()
-    const tip = info.locator('xpath=following-sibling::span[@role="tooltip"]')
-    // Re-place the pointer if the still-settling page slides the button out
+    const tip = info.locator('[role="tooltip"]')
+    // Re-place the pointer if the still-settling page slides the dot out
     // from under it; see the sibling tooltip test for why.
     await expect(async () => {
       await info.hover()
       await expect(tip).toBeVisible({ timeout: 2_000 })
     }).toPass({ timeout: 15_000 })
     await expect(tip).toContainText('FRAME_CLASS')
-    const link = tip.getByTestId('param-wiki-FRAME_CLASS')
-    await expect(link).toHaveAttribute(
-      'href',
-      'https://arduconfigurator.com/wiki/parameters/index.html?param=FRAME_CLASS'
-    )
-    // Plain external link in a new tab — the wiki must never be pulled into the
-    // SPA (an earlier in-app wiki poisoned the PWA shell; that was a P1).
-    await expect(link).toHaveAttribute('target', '_blank')
-    await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    // The sibling bubble that used to sit beside the editor is gone: one "i"
+    // per editable field, the one inline after its label.
+    await expect(page.getByTestId('config-field-info-FRAME_CLASS')).toHaveCount(0)
   })
 
   test('Config exposes a Frame section to set FRAME_CLASS / FRAME_TYPE', async ({ page }) => {
@@ -3039,7 +3020,8 @@ test.describe('Config view', () => {
     const rates = page.getByTestId('config-section-system-rates')
     await rates.getByTestId('config-advanced-system-rates').click()
     const field = rates.locator('.scoped-editor-field', { hasText: 'Fast sampling' })
-    await expect(field.locator('.scoped-editor-field__param-id')).toHaveText('INS_FAST_SAMPLE')
+    await expect(field.getByTestId('param-info-INS_FAST_SAMPLE')).toBeVisible()
+    await expect(field.locator('.scoped-editor-field__param-id')).toHaveCount(0)
 
     // Regression guard: the id hint must not pollute the control's accessible
     // name (a <label> concatenates ALL its text by default) — an exact
@@ -3625,7 +3607,7 @@ test.describe('OSD view preview', () => {
     const strip = page.getByTestId('osd-backend-strip')
     await expect(strip).toHaveAttribute('open', '')
     // The OSD_TYPE backend selector is visible without expanding anything.
-    await expect(strip.locator('.scoped-editor-field__param-id', { hasText: 'OSD_TYPE' })).toBeVisible()
+    await expect(strip.getByTestId('param-info-OSD_TYPE')).toBeVisible()
   })
 
   test('MSP cell count is compact and nudges an explicit value when Auto', async ({ page }) => {
@@ -5191,7 +5173,8 @@ test.describe('ArduPlane demo', () => {
     await openView(page, 'motors')
     // The copter Motor Setup tab IS the inline reorder/direction panel.
     await expect(page.getByTestId('motor-reorder-lightbox-tabs')).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByTestId('motor-reorder-apply')).toBeVisible()
+    await expect(page.getByTestId('motor-reorder-apply-bar')).toHaveCount(0)
+    await expect(page.getByTestId('motor-reorder-lightbox-tab-direction')).toBeVisible()
   })
 
   /** Open one of the Servos sub-tabs by its visible label. */
@@ -5270,7 +5253,7 @@ test.describe('ArduPlane demo', () => {
     await expect(page.getByText('Flow Options')).toHaveCount(0)
     await expect(page.getByText('Height Override')).toHaveCount(0)
 
-    await expect(page.getByTestId('metadata-field-info-FLOW_TYPE')).toBeVisible()
+    await expect(page.getByTestId('param-info-FLOW_TYPE')).toBeVisible()
 
     // The type is source-correct: 6 is DroneCAN (AP_OpticalFlow.h Type::UAVCAN),
     // NOT the SITL value the app once mislabelled as HereFlow.
@@ -7578,14 +7561,16 @@ test.describe('Flight modes moved from a tab into Config', () => {
     // The text-only cards are shorter than the one carrying an editor.
     expect(Math.min(...heights)).toBeLessThan(Math.max(...heights))
 
-    // The dot sits inside the field it belongs to, on the same line as the id.
+    // The dot sits inside the field it belongs to, on the title line. Zero is
+    // allowed: this card strips the field's padding, so a field that fits its
+    // content ends exactly where the title row (and its dot) ends.
     const overflow = await page.evaluate(() => {
       const dot = document.querySelector('.modes-status__card .receiver-info-dot')
       const field = document.querySelector('.modes-status__card .scoped-editor-field')
       if (!dot || !field) return NaN
       return dot.getBoundingClientRect().right - field.getBoundingClientRect().right
     })
-    expect(overflow).toBeLessThan(0)
+    expect(overflow).toBeLessThanOrEqual(0)
   })
 
   test('Config has a Flight Modes tab showing the mode panel', async ({ page }) => {
@@ -7715,18 +7700,20 @@ test.describe('Tuning ▸ Filters', () => {
     // so they are what proves the second notch got real metadata rather than
     // just appearing in the list.
     for (const id of ['INS_HNTC2_MODE', 'INS_HNTC2_OPTS', 'INS_HNTC2_HMNCS']) {
-      await expect(page.getByTestId(`metadata-field-info-${id}`), id).toBeVisible()
+      await expect(page.getByTestId(`param-info-${id}`), id).toBeVisible()
     }
     // Same eight fields as the first notch, including two bitmasks, so it gets
     // the same full-width card rather than a narrow column.
     await expect(page.getByTestId('tuning-filter-group-notch2')).toHaveClass(/tuning-axis-card--wide/)
   })
 
-  test('every parameter carries an info bubble and a wiki link', async ({ page }) => {
+  test('every parameter carries an info dot', async ({ page }) => {
     // Two renderers feed this grid -- the Tuning slider for the frequencies,
     // the shared metadata editor for the enums, bitmasks, and ratios -- and
-    // each stamps its own bubble testid. Both must carry one, which is the
-    // point of asserting across the pair rather than one prefix.
+    // each stamps its own dot testid. Both must carry one, which is the
+    // point of asserting across the pair rather than one prefix. The slider's
+    // bubble also links the parameter reference; the metadata editor's dot is
+    // the Scoped* field's inline "i" (id, description, range), with no link.
     await openFilters(page)
     for (const id of ['INS_GYRO_FILTER', 'ATC_RAT_RLL_FLTD']) {
       await expect(page.getByTestId(`tuning-info-${id}`), id).toBeVisible()
@@ -7736,8 +7723,7 @@ test.describe('Tuning ▸ Filters', () => {
     await expect(page.getByTestId('tuning-info-INS_HNTCH_FREQ')).toBeVisible()
     await expect(page.getByTestId('param-wiki-INS_HNTCH_FREQ')).toHaveCount(1)
     for (const id of ['INS_HNTCH_MODE', 'INS_HNTCH_OPTS', 'INS_HNTCH_REF']) {
-      await expect(page.getByTestId(`metadata-field-info-${id}`), id).toBeVisible()
-      await expect(page.getByTestId(`param-wiki-${id}`), id).toHaveCount(1)
+      await expect(page.getByTestId(`param-info-${id}`), id).toBeVisible()
     }
   })
 

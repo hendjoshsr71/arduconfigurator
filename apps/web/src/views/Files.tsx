@@ -101,7 +101,6 @@ export function FilesView(props: FilesViewProps) {
     <div id="setup-panel-files">
       <Panel
         title="Files"
-        subtitle="Browse, download, upload, and delete files on the flight controller's filesystem over MAVLink FTP."
       >
         {!vehicleConnected ? (
           <p className="bf-note" data-testid="files-disconnected">

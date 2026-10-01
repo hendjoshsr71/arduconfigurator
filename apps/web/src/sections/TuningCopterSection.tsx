@@ -18,6 +18,7 @@ import type { SavedTuningProfile } from '../tuning-profile-library'
 import { toneForParameterDraftStatus, toneForScopedDraftReview } from '../tone-helpers'
 import { TUNING_ALL_PID_PARAM_IDS } from '../tuning-params'
 import { InfoDot } from '../views/InfoDot'
+import { DraftReviewBadge } from '../views/DraftReviewBadge'
 import { TuningView, type TuningTaskCard, type TuningTaskId } from '../views/Tuning'
 
 interface TuningAxisGroup {
@@ -1012,13 +1013,7 @@ export function TuningCopterSection(props: TuningCopterSectionProps): ReactEleme
                           <strong>Tuning changes in review</strong>
                           <p>All staged rates, gains, and filters stay grouped here before they are written to the controller.</p>
                         </div>
-                        <StatusBadge tone={toneForScopedDraftReview(tuningStagedDrafts.length, tuningInvalidDrafts.length)}>
-                          {tuningInvalidDrafts.length > 0
-                            ? `${tuningInvalidDrafts.length} invalid`
-                            : tuningStagedDrafts.length > 0
-                              ? `${tuningStagedDrafts.length} staged`
-                              : 'in sync'}
-                        </StatusBadge>
+                        <DraftReviewBadge staged={tuningStagedDrafts.length} invalid={tuningInvalidDrafts.length} />
                       </div>
 
                       {tuningDraftEntries.length > 0 ? (
