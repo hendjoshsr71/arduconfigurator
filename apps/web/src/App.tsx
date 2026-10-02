@@ -2022,23 +2022,13 @@ export function App() {
     setShowReceiverMappingDiagnostics(false)
   }, [activeViewId])
 
-  // When a guided RC exercise finishes on the Receiver view, return to the Setup
-  // wizard so the step's completion cue + Continue are visible — otherwise the
-  // operator is stranded on Receiver with no next step. Only fires on the
-  // edge into a passing state (ref starts true so a restored/already-passed
-  // exercise on load doesn't yank the view).
-  const returnedFromExerciseRef = useRef(true)
-  useEffect(() => {
-    const exercisePassed =
-      rcRangeExercise.status === 'passed' ||
-      modeSwitchExercise.status === 'passed' ||
-      rcMappingSession.status === 'ready'
-    if (exercisePassed && !returnedFromExerciseRef.current && activeViewId === 'receiver') {
-      setActiveViewId('guided-setup')
-      setSetupMode('wizard')
-    }
-    returnedFromExerciseRef.current = exercisePassed
-  }, [rcRangeExercise.status, modeSwitchExercise.status, rcMappingSession.status, activeViewId])
+  // An RC exercise that finishes on the Receiver tab used to send the view to
+  // the Setup wizard unconditionally — even when the operator had opened the
+  // tab on their own — so the final capture of the mapping flow looked like a
+  // button that threw them to Guided Setup with nothing staged. The wizard
+  // return now lives only in the setupMode-gated effect further down (which
+  // fires solely while the guided flow is active), and the mapping flow stages
+  // its RCMAP_* drafts the moment the last axis captures.
 
   useEffect(() => {
     if (outputMapping.motorOutputs.length === 0) {
@@ -4601,7 +4591,6 @@ export function App() {
   function captureRcMappingCandidate(candidate: RcMappingCandidate, source: 'manual' | 'auto' = 'manual'): void {
     let nextNotice: ParameterNotice | undefined
     let shouldClearRadioConfirmation = false
-    let mappingCompleted = false
 
     setRcMappingSession((current) => {
       if (current.status !== 'running' || current.currentTargetAxis === undefined) {
@@ -4629,7 +4618,6 @@ export function App() {
               } ${formatRcAxisLabel(capturedAxis)} on CH${candidate.channelNumber}. Next: ${rcMappingTargetPrompt(nextTargetAxis).title.toLowerCase()}.`
       }
       shouldClearRadioConfirmation = true
-      mappingCompleted = nextTargetAxis === undefined
 
       return nextTargetAxis === undefined
         ? {
@@ -4650,19 +4638,47 @@ export function App() {
     if (shouldClearRadioConfirmation) {
       clearSetupSectionConfirmation('radio')
     }
-    if (mappingCompleted) {
-      // Release any operator-pinned Receiver sub-task so the view's
-      // auto-routing advances to Endpoints. A pin set by clicking the
-      // Mapping card used to stick here, leaving the flow with no visible
-      // next step after the final axis captured.
-      setReceiverTaskOverride(undefined)
-    }
     if (nextNotice) {
       setParameterNotice(nextNotice)
     }
   }
 
   captureRcMappingCandidateRef.current = captureRcMappingCandidate
+
+  // The detected map becomes RCMAP_* drafts the moment the session goes
+  // running → ready, through the same draft pool every Receiver field writes
+  // to, so the apply dock shows them on the tab the operator is looking at.
+  // An effect on the edge, not code after the setState above: the auto-capture
+  // tick often has another update pending, which defers the updater past any
+  // "did it complete?" flag set inside it — the drafts then never staged, and
+  // the last capture looked like a button that did nothing. A session restored
+  // from storage arrives idle → ready and is left alone. The Stage button
+  // remains for a map that was discarded and wanted back.
+  const previousRcMappingStatusRef = useRef(rcMappingSession.status)
+  useEffect(() => {
+    const previousStatus = previousRcMappingStatusRef.current
+    previousRcMappingStatusRef.current = rcMappingSession.status
+    if (previousStatus !== 'running' || rcMappingSession.status !== 'ready') {
+      return
+    }
+    const detectedChannelMap = Object.fromEntries(
+      RC_CALIBRATION_AXIS_ORDER.map((axisId) => [axisId, rcMappingSession.captures[axisId].detectedChannelNumber])
+    ) as Partial<Record<RcAxisId, number>>
+    const nextDrafts = deriveRcMapDraftValues(detectedChannelMap, currentRcAxisChannelMap)
+    const draftIds = Object.keys(nextDrafts)
+    if (draftIds.length > 0) {
+      mergeDrafts(nextDrafts)
+      setParameterNotice({
+        tone: 'warning',
+        text: `Captured roll, pitch, throttle, and yaw. Staged ${draftIds.length} RCMAP_* change(s) — apply them from the Receiver tab, then reboot and refresh parameters before capturing endpoints.`
+      })
+    }
+    // Stay on Mapping: the staged picks and the Continue to Endpoints button
+    // are the next step. Auto-routing would have moved to Endpoints and
+    // hidden the map that was just staged.
+    setReceiverTaskOverride('mapping')
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on the status edge only
+  }, [rcMappingSession.status])
 
   function handleConfirmRcMappingCandidate(): void {
     if (rcMappingSession.status !== 'running' || rcMappingSession.currentTargetAxis === undefined) {
@@ -9152,6 +9168,7 @@ export function App() {
             handleDiscardScopedParameterDrafts,
             renderAdditionalSettingsCard,
             setDraft,
+            mergeDrafts,
             setReceiverTaskOverride,
             handleSetArmSwitchChannel
           }}

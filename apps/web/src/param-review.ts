@@ -34,8 +34,9 @@ export function isReceiverReviewParamId(paramId: string): boolean {
     paramId.startsWith('RCMAP_') ||
     // MIN/MAX/TRIM from calibration; OPTION from the arm-switch control
     // (also in the Relay tab's scope — a channel's OPTION can legitimately
-    // be edited from either place).
-    /^RC\d+_(MIN|MAX|TRIM|OPTION)$/.test(paramId) ||
+    // be edited from either place); REVERSED from the per-channel reverse
+    // checkbox and the Channel Direction one-click reverse.
+    /^RC\d+_(MIN|MAX|TRIM|OPTION|REVERSED)$/.test(paramId) ||
     /^FLTMODE\d+$/.test(paramId) ||
     RECEIVER_SUPPORT_PARAM_IDS.includes(paramId as (typeof RECEIVER_SUPPORT_PARAM_IDS)[number])
   )

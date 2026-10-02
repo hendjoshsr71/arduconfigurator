@@ -7164,10 +7164,34 @@ body.is-status-dash-dragging {
    stacked column on narrow/phone screens (see the phone media query).
    align-items:start so a tall channel list doesn't stretch the craft. */
 .receiver-live-columns {
+  /* The craft is the mini deck now: a third of the band, the bars get the rest. */
   display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(200px, 0.6fr) minmax(0, 1.4fr);
   gap: var(--space-3);
   align-items: start;
+}
+.receiver-live-columns__craft {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+.receiver-live-columns__craft .receiver-stick-craft {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-200) 55%, transparent);
+  padding: 4px;
+}
+/* Tall enough to read the lean and the lift; with the mode line under it the
+   column is no taller than eight channel rows. */
+.receiver-live-columns__craft .flight-deck--mini .flight-deck__model-frame {
+  height: 160px;
+}
+.receiver-live-columns__craft .receiver-flight-mode-line {
+  flex-wrap: wrap;
+}
+.receiver-live-columns__craft .receiver-rcl-summary {
+  margin: 0;
+  font-size: var(--text-sm);
 }
 .receiver-live-columns__channels {
   display: grid;
@@ -17975,7 +17999,7 @@ button.mavlink-inspector__sent-row {
 
 .receiver-functions-row {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
+  grid-template-columns: 92px minmax(0, 1fr) auto;
   gap: var(--space-3);
   align-items: center;
   padding: 6px 8px;
@@ -17999,9 +18023,310 @@ button.mavlink-inspector__sent-row {
   color: var(--text-muted);
 }
 
+/* Receiver tab chrome. Card titles carry their "i" on the title line; the
+   panels, fields and buttons sit a step tighter than the generic card, the
+   way the Motors tab was trimmed; the mapping and function rows are tables. */
+.telemetry-stack--receiver .switch-exercise-card__header strong:has(+ .receiver-info-dot) {
+  display: inline-block;
+  margin: 0 6px 0 0;
+  vertical-align: middle;
+}
+.telemetry-stack--receiver .switch-exercise-card__header > div > .receiver-info-dot {
+  vertical-align: middle;
+}
+.telemetry-stack--receiver .rc-mapping-card,
+.telemetry-stack--receiver .rc-calibration-card,
+.telemetry-stack--receiver .rc-direction-card,
+.telemetry-stack--receiver .scoped-review-card {
+  padding: 10px 12px;
+  gap: var(--space-2);
+}
+.telemetry-stack--receiver .switch-exercise-controls button {
+  padding-block: 6px;
+}
+.telemetry-stack--receiver .scoped-editor-field {
+  gap: 4px;
+  padding: 6px 8px;
+}
+.telemetry-stack--receiver .scoped-editor-field input,
+.telemetry-stack--receiver .scoped-editor-field select {
+  padding-block: 5px;
+}
+.telemetry-stack--receiver .rc-mapping-focus {
+  padding: 6px 10px;
+}
+/* Status strips are one line: the step title and its sentence run together. */
+.telemetry-stack--receiver .rc-mapping-focus__copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+.telemetry-stack--receiver .rc-mapping-focus__copy strong,
+.telemetry-stack--receiver .rc-mapping-focus__copy p {
+  margin: 0;
+  font-size: var(--text-md);
+}
+.telemetry-stack--receiver .rc-mapping-auto-capture {
+  padding: 4px 10px;
+}
+/* Map and function rows are one line each: the row names the channel, so the
+   field's own title is dropped and only its "i" (raw id, meaning) stays. */
+.receiver-map-row .scoped-editor-field,
+.receiver-functions-row .scoped-editor-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.receiver-map-row .scoped-editor-field > span:first-child,
+.receiver-functions-row .scoped-editor-field > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  order: 2;
+}
+.receiver-map-row .scoped-editor-field .scoped-editor-field__title,
+.receiver-functions-row .scoped-editor-field .scoped-editor-field__title {
+  display: none;
+}
+.receiver-map-row .scoped-editor-field select,
+.receiver-functions-row .scoped-editor-field select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.receiver-map-row .scoped-editor-field--staged,
+.receiver-functions-row .scoped-editor-field--staged {
+  box-shadow: inset 0 0 0 1px rgba(183, 149, 93, 0.7);
+  border-radius: var(--radius-sm);
+}
+.receiver-map-row .scoped-editor-field--invalid,
+.receiver-functions-row .scoped-editor-field--invalid {
+  box-shadow: inset 0 0 0 1px rgba(180, 106, 97, 0.7);
+  border-radius: var(--radius-sm);
+}
+.receiver-map-row .scoped-editor-field__was,
+.receiver-functions-row .scoped-editor-field__was {
+  order: 3;
+  white-space: nowrap;
+}
+/* Endpoints: one row per channel — name, live bar, value, reach, pills. */
+.telemetry-stack--receiver .rc-range-axis-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+.telemetry-stack--receiver .rc-range-axis-card {
+  grid-template-columns: 96px minmax(80px, 1fr) 90px 190px auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 4px 8px;
+}
+.telemetry-stack--receiver .rc-range-axis-card__header {
+  justify-content: flex-start;
+  gap: 6px;
+}
+.telemetry-stack--receiver .rc-range-axis-card > p {
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+/* Column order: name, bar, live value, reach, pills; a warning takes a line. */
+.telemetry-stack--receiver .rc-range-axis-card__header {
+  order: 0;
+}
+.telemetry-stack--receiver .rc-range-axis-card__bar {
+  order: 1;
+}
+.telemetry-stack--receiver .rc-range-axis-card > p:nth-of-type(1) {
+  order: 2;
+  text-align: right;
+}
+.telemetry-stack--receiver .rc-range-axis-card > p:nth-of-type(2) {
+  order: 3;
+}
+.telemetry-stack--receiver .rc-range-axis-card > .config-pills {
+  order: 4;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.telemetry-stack--receiver .rc-range-axis-card > .switch-exercise-warning {
+  grid-column: 1 / -1;
+  order: 5;
+  white-space: normal;
+}
+/* Mode and RSSI fields are title-left/control-right lines, two to a row. A
+   stretched card anchors its rows to the top instead of spreading them. */
+.receiver-tab-body--modes .scoped-editor-grid,
+.receiver-tab-body--signal .scoped-editor-grid {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-2);
+}
+.receiver-tab-body > .scoped-review-card,
+.receiver-tab-column > .scoped-review-card,
+.receiver-tab-body > .rc-calibration-card,
+.receiver-tab-body > .rc-direction-card {
+  align-content: start;
+}
+.receiver-live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.receiver-live-head h3 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+.telemetry-stack--receiver .receiver-live-columns {
+  margin-top: 0;
+}
+.telemetry-stack--receiver .receiver-monitor__sticky {
+  gap: var(--space-2);
+}
+.telemetry-stack--receiver .receiver-channel-disclosure {
+  justify-content: flex-end;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.telemetry-stack--receiver * {
+  min-width: 0;
+}
+
+.receiver-map-grid {
+  display: grid;
+  gap: 6px;
+}
+.receiver-map-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  background: rgba(var(--edge-rgb), 0.02);
+}
+.receiver-map-row--target {
+  box-shadow: inset 0 0 0 1px rgba(183, 149, 93, 0.82);
+}
+.receiver-map-row--complete {
+  box-shadow: inset 0 0 0 1px rgba(111, 143, 120, 0.72);
+}
+.receiver-map-row__axis {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.receiver-map-row__axis small,
+.receiver-map-row__fixed {
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.scoped-editor-field--checkbox .scoped-checkbox {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.scoped-editor-field--checkbox .scoped-checkbox input {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+/* Mode and RSSI fields: title left, control right, one line each. */
+.receiver-tab-body--modes .scoped-editor-field,
+.receiver-tab-body--signal .receiver-rssi-card .scoped-editor-field {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 8px;
+}
+.receiver-tab-body--modes .scoped-editor-field > .scoped-editor-field__was,
+.receiver-tab-body--signal .receiver-rssi-card .scoped-editor-field > .scoped-editor-field__was {
+  grid-column: 2;
+}
+.receiver-tab-body--modes .scoped-editor-field--bitmask {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.receiver-endpoints-line {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.receiver-tab-body,
+.receiver-tab-column {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+.receiver-review-dock__drafts span {
+  font-family: var(--font-data);
+}
+
+@media (min-width: 1200px) {
+  /* Bands: the modes card beside the arm-switch/RC-options column, RSSI beside
+     the extras, the axis cards three across, function and map rows two across.
+     Cards stretch to the row so a short card leaves no air beside a tall one. */
+  .receiver-tab-body--modes,
+  .receiver-tab-body--signal {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: stretch;
+  }
+  /* Modes: the modes card and the arm switch stack on the left, RC options
+     takes the right column, so neither column is taller than the other by a
+     whole card. */
+  .receiver-tab-body--modes {
+    grid-template-rows: auto 1fr;
+  }
+  .receiver-tab-body--modes > [data-testid='receiver-flight-modes-card'] {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .receiver-tab-body--modes > .receiver-tab-column--arm {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .receiver-tab-body--modes > .receiver-tab-column--options {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .receiver-tab-column > .scoped-review-card {
+    flex: 1 1 auto;
+  }
+  .receiver-tab-column--options {
+    grid-template-rows: 1fr;
+  }
+  .receiver-functions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .receiver-map-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
-  .receiver-functions-row {
-    grid-template-columns: minmax(0, 1fr);
+  .receiver-functions-row,
+  .receiver-map-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 4px;
+  }
+  .receiver-functions-row__channel,
+  .receiver-map-row__axis {
+    grid-column: 1 / -1;
+  }
+  .telemetry-stack--receiver .rc-range-axis-card {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .telemetry-stack--receiver .rc-range-axis-card__bar {
+    grid-column: 1 / -1;
   }
 }
 

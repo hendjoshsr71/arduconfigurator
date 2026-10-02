@@ -5401,12 +5401,13 @@ test.describe('ArduRover / ArduSub demo', () => {
     await expect(page.getByTestId('failsafe-row-FS_EKF_ACTION')).toHaveCount(0)
     await expect(page.getByTestId('failsafe-row-FS_OPTIONS')).toHaveCount(0)
 
-    // Receiver Flight-Mode pills name the real Rover slot param (MODE1..6),
+    // Receiver Flight-Mode fields bind the real Rover slot param (MODE1..6),
     // not the Copter FLTMODE prefix. Mock seeds MODE1 = 0 -> "Manual".
     await openView(page, 'receiver')
     await page.getByTestId('receiver-tab-flight-modes').click()
-    await expect(page.getByText('FLTMODE1 =', { exact: false })).toHaveCount(0)
-    await expect(page.getByText('MODE1 = Manual', { exact: false })).toBeVisible()
+    await expect(page.getByTestId('param-info-FLTMODE1')).toHaveCount(0)
+    await expect(page.getByTestId('param-info-MODE1')).toBeVisible()
+    await expect(page.getByTestId('receiver-flight-modes-card')).toContainText('Manual')
   })
 
   test('Sub curated Tuning surface renders its groups, shows seeded values, and stages a draft', async ({ page }) => {
@@ -5538,7 +5539,8 @@ test.describe('Receiver scoped apply', () => {
 
     const dock = page.locator('.receiver-review-dock')
     await expect(dock).toBeVisible()
-    await expect(dock).toContainText(/workflow staged/i)
+    await expect(dock).toContainText(/1 staged/i)
+    await expect(dock).toContainText('RC_OPTIONS')
 
     const applyButton = page.getByTestId('receiver-apply-button')
     await expect(applyButton).toBeEnabled()
@@ -5547,6 +5549,149 @@ test.describe('Receiver scoped apply', () => {
     // The demo echoes the PARAM_SET write, so the draft verifies and clears,
     // which removes the pending-review dock.
     await expect(dock).toHaveCount(0, { timeout: COMMAND_ACK_TIMEOUT })
+  })
+})
+
+// The demo rehearses the sticks one axis at a time in RCMAP order (CH1, CH2,
+// CH3, CH4) with a rest between legs. The mapping capture locks onto whatever
+// channel moves alone AFTER it starts, so a capture begun mid-loop would call
+// the next moving channel "roll". Wait for the yaw leg to end and begin in the
+// rest that follows it, which is right before CH1 moves.
+async function waitForStickRestAfterYaw(page: Page): Promise<void> {
+  const yawValue = page.getByTestId('receiver-channel-bars-ch4').locator('.rc-bar-value')
+  await expect.poll(async () => (await yawValue.textContent())?.trim(), { timeout: 30_000 }).not.toBe('1500')
+  await expect.poll(async () => (await yawValue.textContent())?.trim(), { timeout: 30_000 }).toBe('1500')
+}
+
+test.describe('Receiver mapping', () => {
+  test('the guided capture stages the detected RCMAP map on the tab it ran on, never leaving Receiver', async ({ page }) => {
+    // Field report: the final capture of the mapping flow sent the operator
+    // to Guided Setup with nothing staged. The demo map is swapped here so
+    // the capture (roll on CH1, pitch on CH2) has something to stage.
+    test.setTimeout(120_000)
+    await page.goto('/?demoParamOverrides=RCMAP_ROLL:2,RCMAP_PITCH:1')
+    await connectViaHeader(page)
+    await expectParameterSyncComplete(page)
+    await openView(page, 'receiver')
+    await page.getByTestId('receiver-tab-mapping').click()
+
+    const rollPick = page.getByTestId('receiver-map-roll').locator('select')
+    const pitchPick = page.getByTestId('receiver-map-pitch').locator('select')
+    await expect(rollPick).toHaveValue('2')
+    await expect(pitchPick).toHaveValue('1')
+
+    await waitForStickRestAfterYaw(page)
+    await page.getByTestId('receiver-mapping-start').click()
+    await expect(page.getByTestId('receiver-mapping-focus')).toContainText('Move Roll Only')
+
+    // The demo's rehearsal auto-captures each axis in turn; two loops at most.
+    // (The throttle target accepts any channel with a large swing, so the
+    // demo's toggling CH6 switch may win it — that is the detector's rule,
+    // not under test here. Roll and pitch are what the swapped map exercises.)
+    await expect(page.getByTestId('receiver-mapping-focus')).toContainText('identified', { timeout: 90_000 })
+    // Still on the Receiver tab, still on Mapping — the wizard was never opened.
+    await expect(page.getByTestId('receiver-mapping-card')).toBeVisible()
+    await expect(page.getByTestId('setup-wizard')).toHaveCount(0)
+    // The detected map is staged in the picks and named in the apply dock.
+    await expect(rollPick).toHaveValue('1')
+    await expect(pitchPick).toHaveValue('2')
+    // The row holds the pick and the reverse box; the pick is the first field.
+    await expect(page.getByTestId('receiver-map-roll').locator('.scoped-editor-field').first()).toHaveClass(/scoped-editor-field--staged/)
+    const dock = page.getByTestId('receiver-review-dock')
+    await expect(dock).toContainText(/\d staged/)
+    await expect(dock).toContainText('RCMAP_ROLL 2 → 1')
+    await expect(dock).toContainText('RCMAP_PITCH 1 → 2')
+    await expect(page.getByTestId('receiver-apply-button')).toHaveText(/Apply Receiver Changes \(\d\)/)
+    // Applying goes through the normal verified write; the demo echoes it.
+    await page.getByTestId('receiver-apply-button').click()
+    await expect(dock).toHaveCount(0, { timeout: COMMAND_ACK_TIMEOUT })
+    await expect(page.getByTestId('receiver-mapping-card')).toBeVisible()
+  })
+
+  test('each RCMAP channel is a pick, and each mapped channel has a reverse box, both staged as receiver drafts', async ({ page }) => {
+    await page.goto('/')
+    await connectViaHeader(page)
+    await openView(page, 'receiver')
+    await page.getByTestId('receiver-tab-mapping').click()
+
+    // Pitch is CH2 in the demo; its reverse box binds RC2_REVERSED.
+    const reverse = page.getByTestId('receiver-reverse-2').locator('input')
+    await expect(reverse).not.toBeChecked()
+    await reverse.check()
+    const dock = page.getByTestId('receiver-review-dock')
+    await expect(dock).toContainText('RC2_REVERSED 0 → 1')
+    await expect(page.getByTestId('receiver-reverse-2')).toHaveClass(/scoped-editor-field--staged/)
+
+    // A manual pick stages RCMAP_* without the capture flow.
+    const yawPick = page.getByTestId('receiver-map-yaw').locator('select')
+    await expect(yawPick).toHaveValue('4')
+    await yawPick.selectOption('8')
+    await expect(dock).toContainText('RCMAP_YAW 4 → 8')
+    await expect(dock).toContainText('2 staged')
+
+    // Discard from the dock returns both to their live values.
+    await page.getByTestId('receiver-discard-button').click()
+    await expect(dock).toHaveCount(0)
+    await expect(yawPick).toHaveValue('4')
+    await expect(reverse).not.toBeChecked()
+  })
+
+  test('the Functions rows carry a reverse box only for channels the controller reports RCn_REVERSED on', async ({ page }) => {
+    await page.goto('/')
+    await connectViaHeader(page)
+    await openView(page, 'receiver')
+    await page.getByTestId('receiver-task-nav').getByRole('button', { name: 'Functions' }).click()
+    await expect(page.getByTestId('receiver-function-5')).toBeVisible()
+    // The demo reports RC1..RC4_REVERSED only, so the AUX rows show none.
+    await expect(page.getByTestId('receiver-reverse-5')).toHaveCount(0)
+  })
+})
+
+test.describe('Receiver endpoints on a CRSF link', () => {
+  test('offers the fixed CRSF limits instead of a measured capture, and flags a stick that falls short', async ({ page }) => {
+    // The demo allows CRSF only (RC_PROTOCOLS = 512), which is the CRSF signal.
+    test.setTimeout(120_000)
+    await page.goto('/')
+    await connectViaHeader(page)
+    await expectParameterSyncComplete(page)
+    await openView(page, 'receiver')
+    await page.getByTestId('receiver-tab-endpoints').click()
+
+    await expect(page.getByTestId('receiver-endpoints-crsf')).toContainText('987 to 2011')
+    await expect(page.getByTestId('receiver-endpoints-stage')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Start Capture' })).toHaveCount(0)
+
+    // One action stages the CRSF range for every channel with endpoints: the
+    // demo seeds RC1..4 at 1000/2000/1500, so MIN and MAX change, TRIM does not.
+    await page.getByTestId('receiver-set-crsf-limits').click()
+    const dock = page.getByTestId('receiver-review-dock')
+    await expect(dock).toContainText('8 staged')
+    await expect(dock).toContainText('RC1_MIN 1000 → 987')
+    await expect(dock).toContainText('RC4_MAX 2000 → 2011')
+    await expect(dock).not.toContainText('RC1_TRIM')
+    await page.getByTestId('receiver-discard-button').click()
+    await expect(dock).toHaveCount(0)
+
+    // Checking the sticks still watches the transmitter: the demo sweeps roll
+    // 1200..1800, well short of the CRSF ends, so roll is called out — and the
+    // firmware values are not the fix.
+    await page.getByTestId('receiver-endpoints-capture').click()
+    const warning = page.getByTestId('receiver-endpoints-calibration-warning-roll')
+    await expect(warning).toContainText('CH1: reached 1200..1800, centre 1500', { timeout: 60_000 })
+    await expect(warning).toContainText('Calibrate the sticks on the radio')
+    await expect(page.getByTestId('receiver-endpoints-stage')).toHaveCount(0)
+  })
+
+  test('a link that is not known to be CRSF keeps the measured capture', async ({ page }) => {
+    await page.goto('/?demoParamOverrides=RC_PROTOCOLS:1')
+    await connectViaHeader(page)
+    await expectParameterSyncComplete(page)
+    await openView(page, 'receiver')
+    await page.getByTestId('receiver-tab-endpoints').click()
+    await expect(page.getByTestId('receiver-endpoints-crsf')).toHaveCount(0)
+    await expect(page.getByTestId('receiver-set-crsf-limits')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Start Capture' })).toBeVisible()
+    await expect(page.getByTestId('receiver-endpoint-roll')).toContainText('CH1')
   })
 })
 
