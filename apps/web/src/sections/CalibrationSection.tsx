@@ -30,6 +30,7 @@ import { BoardOrientationResult } from '../views/BoardOrientationResult'
 import { TcalCalibrationCard } from './TcalCalibrationCard'
 import { ValtCalibrationCard, type ValtCalibrationCardProps } from './ValtCalibrationCard'
 import { HoverThrottleLearnCard } from './HoverThrottleLearnCard'
+import { accelerometerCalibrationVerdict } from '../view-models/accel-calibration-state'
 import { AccelZBiasCard } from './AccelZBiasCard'
 import { HoverThrottleFromLogCard } from './HoverThrottleFromLogCard'
 import { AutotuneFlightCard } from './AutotuneFlightCard'
@@ -515,6 +516,26 @@ export function CalibrationSection(props: CalibrationSectionProps): ReactElement
                     : actionState.status === 'succeeded' ? 'success'
                       : actionState.status === 'requested' || actionState.status === 'running' ? 'warning'
                         : 'neutral'
+                // Green when the VALUE is good, not only when this session ran
+                // it. Accel: the vehicle's own pre-arm evidence (saved id,
+                // offsets, scales). Level: a saved AHRS_TRIM, which a never-
+                // levelled board leaves at exactly 0/0.
+                const succeededNow = actionState.status === 'succeeded'
+                const goodOnVehicle =
+                  action.actionId === 'calibrate-accelerometer'
+                    ? accelerometerCalibrationVerdict(snapshot) === 'calibrated'
+                    : action.actionId === 'calibrate-level'
+                      ? ['AHRS_TRIM_X', 'AHRS_TRIM_Y'].some((id) => {
+                          const value = snapshot.parameters.find((entry) => entry.id === id)?.value
+                          return typeof value === 'number' && value !== 0
+                        })
+                      : false
+                const good = succeededNow || (actionState.status === 'idle' && goodOnVehicle)
+                const badgeTone = good ? 'success' : tone
+                const badgeText =
+                  actionState.status === 'idle' && goodOnVehicle
+                    ? action.actionId === 'calibrate-level' ? 'trimmed' : 'calibrated'
+                    : actionState.status
                 const showPoseGuide =
                   action.actionId === 'calibrate-accelerometer' &&
                   (actionState.status === 'requested' || actionState.status === 'running')
@@ -534,10 +555,15 @@ export function CalibrationSection(props: CalibrationSectionProps): ReactElement
                     ? rebootPromptKey
                     : undefined
                 return (
-                  <article key={action.actionId} className="calibration-card" data-testid={`calibration-card-${action.actionId}`}>
+                  <article
+                    key={action.actionId}
+                    className={`calibration-card${good ? ' calibration-card--good' : ''}`}
+                    data-testid={`calibration-card-${action.actionId}`}
+                    data-good={good ? 'true' : undefined}
+                  >
                     <div className="calibration-card__header">
                       <strong>{action.title}</strong>
-                      <StatusBadge tone={tone}>{actionState.status}</StatusBadge>
+                      <StatusBadge tone={badgeTone}>{badgeText}</StatusBadge>
                     </div>
                     {/* Live status summary (pose prompts, progress, completion)
                         falls back to the static copy when idle. */}

@@ -16121,6 +16121,13 @@ details.bf-gui-box:not([open]) > summary::after {
   border-radius: var(--radius-lg);
   background: var(--surface-200);
 }
+/* A calibration the vehicle holds a good value for: green edge and a faint
+   green wash, the same treatment the guided setup gives a met step. */
+.calibration-card--good {
+  border-color: rgba(92, 194, 138, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(92, 194, 138, 0.1);
+  background: linear-gradient(180deg, rgba(92, 194, 138, 0.07), transparent 60%), var(--surface-200);
+}
 .calibration-card__header {
   display: flex;
   align-items: center;

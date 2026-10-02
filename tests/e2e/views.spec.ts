@@ -1480,8 +1480,12 @@ test.describe('Calibration tab', () => {
 
     const card = page.getByTestId('calibration-card-calibrate-level')
     await expect(card).toBeVisible()
+    // The demo's AHRS_TRIM is 0/0 -- never levelled -- so the card is plain.
+    await expect(card).not.toHaveAttribute('data-good', 'true')
     await page.getByTestId('calibration-run-calibrate-level').click()
     await expect(card.getByText('succeeded', { exact: true })).toBeVisible({ timeout: COMMAND_ACK_TIMEOUT })
+    // A good value turns the card green, not only the badge.
+    await expect(card).toHaveAttribute('data-good', 'true')
   })
 
   test('a finished calibration offers a reboot, and only claims one is required when ArduPilot needs it', async ({ page }) => {
