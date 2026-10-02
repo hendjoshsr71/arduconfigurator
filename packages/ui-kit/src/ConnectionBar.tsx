@@ -108,6 +108,25 @@ export interface ConnectionBarProps {
    */
   onChoosePort?: () => void
   connectLabel?: string
+  /**
+   * Whether connect and disconnect are two buttons or one.
+   *
+   * `'separate'` (the default, and what `apps/web` has always had) keeps the
+   * connect button on screen while connected, disabled, with Disconnect beside
+   * it. That is right where a page manages SEVERAL links at once -- a fleet of
+   * craft, each with its own port -- because the two actions then mean
+   * different things to different rows and a toggle would be ambiguous about
+   * which.
+   *
+   * `'toggle'` is one button that becomes Disconnect while connected. Right
+   * where there is exactly one link: a disabled Connect sitting next to an
+   * active Disconnect is a control that can never be pressed, taking up the
+   * most valuable space on the page.
+   *
+   * In `'toggle'` mode `onConnect` is called for BOTH, so the caller decides
+   * what the press means from its own state; `connectLabel` supplies the word.
+   */
+  connectMode?: 'separate' | 'toggle'
   choosePortLabel?: string
   statusLabel?: string
   testIdPrefix?: string
@@ -131,6 +150,7 @@ export function ConnectionBar(props: PropsWithChildren<ConnectionBarProps>): Rea
     onDisconnect,
     onChoosePort,
     connectLabel = 'Connect',
+    connectMode = 'separate',
     choosePortLabel = 'Choose a different port',
     statusLabel,
     testIdPrefix = '',
@@ -149,7 +169,9 @@ export function ConnectionBar(props: PropsWithChildren<ConnectionBarProps>): Rea
       data-testid={testId('connect-button')}
       style={buttonStyle('primary')}
       onClick={onConnect}
-      disabled={busy || live}
+      // In toggle mode the one button is the disconnect too, so `live` must
+      // not disable it -- that would leave no way to disconnect at all.
+      disabled={busy || (live && connectMode !== 'toggle')}
     >
       {connectLabel}
     </button>
@@ -171,7 +193,7 @@ export function ConnectionBar(props: PropsWithChildren<ConnectionBarProps>): Rea
     )
   }
 
-  if (onDisconnect && (live || settling || busy)) {
+  if (onDisconnect && connectMode !== 'toggle' && (live || settling || busy)) {
     actions.push(
       <button
         key="disconnect"
