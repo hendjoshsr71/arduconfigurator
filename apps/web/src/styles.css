@@ -18102,15 +18102,26 @@ button.mavlink-inspector__sent-row {
   flex: 1 1 auto;
   min-width: 0;
 }
+/* The staged/invalid outline goes on the control, not the wrapper: the
+   wrapper also holds the "i" and the "was X" line, so an outline on it boxed
+   the whole group and stretched as the line appeared. */
 .receiver-map-row .scoped-editor-field--staged,
-.receiver-functions-row .scoped-editor-field--staged {
-  box-shadow: inset 0 0 0 1px rgba(183, 149, 93, 0.7);
-  border-radius: var(--radius-sm);
-}
+.receiver-functions-row .scoped-editor-field--staged,
 .receiver-map-row .scoped-editor-field--invalid,
 .receiver-functions-row .scoped-editor-field--invalid {
-  box-shadow: inset 0 0 0 1px rgba(180, 106, 97, 0.7);
-  border-radius: var(--radius-sm);
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+.receiver-map-row .scoped-editor-field--staged select,
+.receiver-functions-row .scoped-editor-field--staged select {
+  border-color: rgba(183, 149, 93, 0.9);
+  box-shadow: 0 0 0 1px rgba(183, 149, 93, 0.7);
+}
+.receiver-map-row .scoped-editor-field--invalid select,
+.receiver-functions-row .scoped-editor-field--invalid select {
+  border-color: rgba(180, 106, 97, 0.9);
+  box-shadow: 0 0 0 1px rgba(180, 106, 97, 0.7);
 }
 .receiver-map-row .scoped-editor-field__was,
 .receiver-functions-row .scoped-editor-field__was {
