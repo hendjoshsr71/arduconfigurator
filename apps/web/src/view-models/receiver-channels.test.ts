@@ -85,7 +85,7 @@ describe('assessTransmitterCalibration', () => {
     // 1200..1800 is a deliberate sweep that still falls short: judged without
     // waiting for a "both ends" that a short stick can never deliver.
     expect(assessTransmitterCalibration({ ...good, observedMin: 1200, observedMax: 1800, complete: false })).toContain(
-      'reached 1200..1800'
+      '1200..1800'
     )
   })
 
@@ -103,7 +103,7 @@ describe('assessTransmitterCalibration', () => {
 
   it('flags a short end, naming the channel, the reach and the centre', () => {
     expect(assessTransmitterCalibration({ ...good, observedMin: 1200, observedMax: 1800 })).toBe(
-      'Transmitter looks out of calibration on CH1: reached 1200..1800, centre 1500. Calibrate the sticks on the radio, not here.'
+      'CH1: 1200..1800, centre 1500. Calibrate the radio.'
     )
   })
 
@@ -116,7 +116,7 @@ describe('assessTransmitterCalibration', () => {
   it('does not judge the centre of a throttle (no centre)', () => {
     expect(assessTransmitterCalibration({ ...good, channelNumber: 3, centerPwm: undefined })).toBeUndefined()
     expect(assessTransmitterCalibration({ ...good, channelNumber: 3, centerPwm: undefined, observedMax: 1900 })).toBe(
-      'Transmitter looks out of calibration on CH3: reached 987..1900. Calibrate the sticks on the radio, not here.'
+      'CH3: 987..1900. Calibrate the radio.'
     )
   })
 })

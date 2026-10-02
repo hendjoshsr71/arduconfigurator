@@ -824,7 +824,7 @@ export function ReceiverSection(props: ReceiverSectionProps): ReactElement {
                             <strong>Endpoints</strong>
                             <InfoDot label="About RC endpoints" wide>
                               {crsfLink
-                                ? `A CRSF link carries a fixed channel range: the flight controller reads ${CRSF_RC_MIN_US} to ${CRSF_RC_MAX_US} µs with the centre at ${CRSF_RC_CENTER_US}, so the endpoints are set from those values rather than measured. Checking the sticks still shows whether the radio itself reaches that range; a short or off-centre stick is fixed by calibrating the radio, not by changing these values.`
+                                ? `CRSF has a fixed range: ${CRSF_RC_MIN_US} to ${CRSF_RC_MAX_US} µs, centre ${CRSF_RC_CENTER_US}. Set it here. A stick that falls short is fixed on the radio.`
                                 : 'Start the capture with the sticks centred and throttle low, move roll, pitch, throttle and yaw through their full travel, and flick the CH5/CH6 switches low and high if you use them. Stage the captured values, then apply them from this tab.'}
                             </InfoDot>
                           </div>

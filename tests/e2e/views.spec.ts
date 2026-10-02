@@ -5691,8 +5691,8 @@ test.describe('Receiver endpoints on a CRSF link', () => {
     // firmware values are not the fix.
     await page.getByTestId('receiver-endpoints-capture').click()
     const warning = page.getByTestId('receiver-endpoints-calibration-warning-roll')
-    await expect(warning).toContainText('CH1: reached 1200..1800, centre 1500', { timeout: 60_000 })
-    await expect(warning).toContainText('Calibrate the sticks on the radio')
+    await expect(warning).toContainText('CH1: 1200..1800, centre 1500', { timeout: 60_000 })
+    await expect(warning).toContainText('Calibrate the radio')
     await expect(page.getByTestId('receiver-endpoints-stage')).toHaveCount(0)
   })
 

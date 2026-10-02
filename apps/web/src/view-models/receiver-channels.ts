@@ -151,5 +151,6 @@ export function assessTransmitterCalibration(input: TransmitterCalibrationInput)
     return undefined
   }
   const centre = input.centerPwm !== undefined ? `, centre ${Math.round(input.centerPwm)}` : ''
-  return `Transmitter looks out of calibration on CH${input.channelNumber}: reached ${Math.round(input.observedMin)}..${Math.round(input.observedMax)}${centre}. Calibrate the sticks on the radio, not here.`
+  // As short as it can be: the channel, what it reached, and the one fix.
+  return `CH${input.channelNumber}: ${Math.round(input.observedMin)}..${Math.round(input.observedMax)}${centre}. Calibrate the radio.`
 }
