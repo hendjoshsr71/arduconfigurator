@@ -458,11 +458,12 @@ test.describe('browser configurator regression flows', () => {
     // the USB box has no reason to render on any transport.
     await expect(page.getByTestId('motor-test-usb-ack')).toHaveCount(0)
     await expect(page.locator('[data-testid$="-ack"] input[type="checkbox"]')).toHaveCount(1)
-    // Default request: every motor in order, 3 s. ALL is already the selected
-    // row and "In order" the lit mode, so Test is live as soon as the box is
-    // ticked.
+    // Default request: every motor in order, 5 s (long enough to feel each
+    // motor's direction; also the non-expert ceiling). ALL is already the
+    // selected row and "In order" the lit mode, so Test is live as soon as the
+    // box is ticked.
     await expect(page.getByTestId('motor-test-sliders-in-order')).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByTestId('motor-test-sliders-duration')).toHaveValue('3')
+    await expect(page.getByTestId('motor-test-sliders-duration')).toHaveValue('5')
     // One Test button now; it carries the full gate the Run button used to.
     await expect(page.getByTestId('motor-test-sliders-test')).toBeEnabled()
   })
