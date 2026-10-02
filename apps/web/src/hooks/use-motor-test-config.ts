@@ -6,9 +6,15 @@
 //                              sentinel (0) for the run-all-motors path,
 //                              or undefined when no selection is staged
 //   motorTestThrottlePercent   0..100, default 7 (safe-bench starting throttle)
-//   motorTestDurationSeconds   1..N, default 1
+//   motorTestDurationSeconds   1..N, default 3
+//
+// Defaults: every motor in order, 3 s. The first thing a bench test checks
+// is "do they all spin, in the right order"; one motor for one second was a
+// default nobody kept.
 
 import { useState, type Dispatch, type SetStateAction } from 'react'
+
+import { ALL_MOTOR_TEST_OUTPUT } from '../motor-test-helpers'
 
 export interface UseMotorTestConfigResult {
   motorTestOutput: number | undefined
@@ -20,9 +26,9 @@ export interface UseMotorTestConfigResult {
 }
 
 export function useMotorTestConfig(): UseMotorTestConfigResult {
-  const [motorTestOutput, setMotorTestOutput] = useState<number | undefined>()
+  const [motorTestOutput, setMotorTestOutput] = useState<number | undefined>(ALL_MOTOR_TEST_OUTPUT)
   const [motorTestThrottlePercent, setMotorTestThrottlePercent] = useState(7)
-  const [motorTestDurationSeconds, setMotorTestDurationSeconds] = useState(1)
+  const [motorTestDurationSeconds, setMotorTestDurationSeconds] = useState(3)
 
   return {
     motorTestOutput,

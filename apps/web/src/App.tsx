@@ -2055,7 +2055,10 @@ export function App() {
         return current
       }
 
-      return outputMapping.motorOutputs[0]?.channelNumber
+      // Before the first sync there are no motor outputs and the selection is
+      // cleared; when they arrive, land on the default (every motor in order),
+      // not on M1.
+      return ALL_MOTOR_TEST_OUTPUT
     })
   }, [outputMapping.motorOutputs])
 
@@ -5096,6 +5099,16 @@ export function App() {
       // Unlocks the Stage button's primary emphasis and the
       // "no changes needed" note when the order already matches.
       setGuidedReorderCompleted(true)
+      // Order already matches: nothing to stage here, so go straight to
+      // the Direction step. With changes pending, stay -- the Stage button
+      // is on this tab and the next-step note says so.
+      const orderUnchanged = Object.entries(plan.nextMapping).every(
+        ([channel, position]) =>
+          outputMapping.motorOutputs.find((output) => output.channelNumber === Number(channel))?.motorNumber === Number(position)
+      )
+      if (orderUnchanged) {
+        setMotorDialogTab('direction')
+      }
     } else {
       setGuidedReorderStep(plan.nextStep)
       setGuidedReorderAwaitingSpin(true)

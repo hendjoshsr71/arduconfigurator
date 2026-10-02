@@ -410,11 +410,16 @@ test.describe('browser configurator regression flows', () => {
     await expect(banner).toContainText(/OUT\d+ spun/, { timeout: COMMAND_ACK_TIMEOUT })
     await page.getByTestId('motor-reorder-pick-4').click()
     await expect(banner).toHaveCount(0)
-    await expect(page.getByTestId('motor-reorder-next-direction')).toBeVisible()
-    await expect(page.getByTestId('motor-reorder-guided-start')).toBeVisible()
+    // The demo's order already matches, so there is nothing to stage and the
+    // panel moves to Direction by itself. With changes pending it stays on
+    // Order, where the Stage button is, and offers the hand-off instead.
+    await expect(page.getByTestId('motor-reorder-lightbox-tab-direction')).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByTestId('motor-reorder-lightbox-direction')).toBeVisible()
 
     // Re-open a run so the remaining mid-sequence assertions below still have
     // one in progress.
+    await page.getByTestId('motor-reorder-lightbox-tab-reorder').click()
+    await expect(page.getByTestId('motor-reorder-guided-start')).toBeVisible()
     await page.getByTestId('motor-reorder-guided-start').click()
     await expect(banner).toBeVisible()
     await expect(banner).toContainText('1 / 4')
@@ -453,7 +458,11 @@ test.describe('browser configurator regression flows', () => {
     // the USB box has no reason to render on any transport.
     await expect(page.getByTestId('motor-test-usb-ack')).toHaveCount(0)
     await expect(page.locator('[data-testid$="-ack"] input[type="checkbox"]')).toHaveCount(1)
-    await page.getByTestId('motor-test-sliders').getByText('ALL', { exact: true }).click()
+    // Default request: every motor in order, 3 s. ALL is already the selected
+    // row and "In order" the lit mode, so Test is live as soon as the box is
+    // ticked.
+    await expect(page.getByTestId('motor-test-sliders-in-order')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('motor-test-sliders-duration')).toHaveValue('3')
     // One Test button now; it carries the full gate the Run button used to.
     await expect(page.getByTestId('motor-test-sliders-test')).toBeEnabled()
   })

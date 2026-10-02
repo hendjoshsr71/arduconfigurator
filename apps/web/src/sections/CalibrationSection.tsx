@@ -1626,6 +1626,7 @@ export function CalibrationSection(props: CalibrationSectionProps): ReactElement
                   canApplyDraftParameters={canApplyDraftParameters}
                   busyAction={busyAction}
                   setDraft={setDraft}
+                  editedValues={editedValues}
                 />
               ) : null}
               {/* Measured once, when a new frame and powertrain first fly --

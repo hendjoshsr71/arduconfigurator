@@ -26,6 +26,8 @@ export interface HoverThrottleLearnCardProps {
   canApplyDraftParameters: boolean
   busyAction: string | undefined
   setDraft: (paramId: string, value: string) => void
+  /** Staged drafts, so a click here shows as staged instead of doing nothing visible. */
+  editedValues: Record<string, string>
 }
 
 // The mode is not a detail. Copter::update_throttle_hover returns early in any
@@ -52,10 +54,12 @@ export function HoverThrottleLearnCard({
   snapshot,
   canApplyDraftParameters,
   busyAction,
-  setDraft
+  setDraft,
+  editedValues
 }: HoverThrottleLearnCardProps): ReactElement | null {
   const state = deriveHoverLearnState(snapshot)
   const canStage = canApplyDraftParameters && busyAction === undefined
+  const rearmStaged = editedValues.MOT_HOVER_LEARN === String(MOT_HOVER_LEARN_AND_SAVE)
   const { stage } = state
   // Past the hover-throttle flight: it was accepted and frozen.
   const accepted = stage === 'flight-2' || stage === 'flight-2-review' || stage === 'complete'
@@ -179,20 +183,28 @@ export function HoverThrottleLearnCard({
 
       {accepted ? (
         <>
+          {/* Say what MOT_HOVER_LEARN actually is. This used to read "hover
+              learning is off" regardless, next to a greyed re-learn button --
+              on a vehicle whose parameters were just loaded with the stock 2,
+              the operator saw "off", pressed the button, and nothing happened. */}
           <p className="success-copy" data-testid="hover-learn-accepted">
-            Accepted, and hover learning is off so nothing overwrites it.
+            {state.hoverLearnArmed
+              ? 'Accepted. Hover learning is on (MOT_HOVER_LEARN = 2): the next altitude-holding flight re-learns it on disarm.'
+              : 'Accepted, and hover learning is off so nothing overwrites it.'}
           </p>
           {/* Without this the card is a dead end once frozen: re-learning would
               mean clearing the Z-bias calibration, which is a different job. */}
-          <button
-            type="button"
-            style={buttonStyle()}
-            data-testid="hover-learn-rearm"
-            disabled={!canStage || state.hoverLearnArmed}
-            onClick={() => setDraft('MOT_HOVER_LEARN', String(MOT_HOVER_LEARN_AND_SAVE))}
-          >
-            Re-learn on the next hover
-          </button>
+          {state.hoverLearnArmed ? null : (
+            <button
+              type="button"
+              style={buttonStyle(rearmStaged ? undefined : 'primary')}
+              data-testid="hover-learn-rearm"
+              disabled={!canStage || rearmStaged}
+              onClick={() => setDraft('MOT_HOVER_LEARN', String(MOT_HOVER_LEARN_AND_SAVE))}
+            >
+              {rearmStaged ? 'Re-learn staged — apply to write it' : 'Re-learn on the next hover'}
+            </button>
+          )}
         </>
       ) : null}
 
