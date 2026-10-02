@@ -8340,8 +8340,6 @@ export function App() {
             sessionNotice={sessionNotice}
             onReconnect={() => void handleConnect()}
             parameterFollowUp={parameterFollowUp}
-            isExpertMode={isExpertMode}
-            stagedParameterDraftCount={stagedParameterDrafts.length}
             busyAction={busyAction}
             onRebootAutopilot={() => void handleGuidedAction('reboot-autopilot')}
             onPullParameters={() => void handleGuidedAction('request-parameters')}

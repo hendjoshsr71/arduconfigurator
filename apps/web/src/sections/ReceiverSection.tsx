@@ -206,6 +206,9 @@ export function ReceiverSection(props: ReceiverSectionProps): ReactElement {
   // fire-and-forget, so the button flips to the accent colour (and "Bind sent")
   // for ~1.6s on click, then reverts.
   const [bindFlash, setBindFlash] = useState(false)
+  // The dock's per-draft list (id, old → new) is behind Show changes: the
+  // count and the buttons are what the bar is for; the list is on request.
+  const [showDockDrafts, setShowDockDrafts] = useState(false)
   useEffect(() => {
     if (!bindFlash) {
       return
@@ -1259,25 +1262,34 @@ export function ReceiverSection(props: ReceiverSectionProps): ReactElement {
               <div className="receiver-review-dock" data-testid="receiver-review-dock">
                 <div className="receiver-review-dock__summary">
                   <strong>{allInvalidCount > 0 ? `${allInvalidCount} invalid` : `${allStagedCount} staged`}</strong>
-                  <div className="config-pills receiver-review-dock__drafts">
-                    {allReceiverDrafts.map((draft) => (
-                      <span
-                        key={draft.id}
-                        className={draft.status === 'invalid' ? 'is-pending' : undefined}
-                        title={draft.status === 'staged' ? draft.label : draft.reason}
-                      >
-                        {draft.id}
-                        {draft.status === 'staged'
-                          ? ` ${formatParameterValue(draft.currentValue, draft.definition?.unit)} → ${formatParameterValue(draft.nextValue, draft.definition?.unit)}`
-                          : draft.status === 'invalid'
-                            ? ' invalid'
-                            : ''}
-                      </span>
-                    ))}
-                  </div>
+                  {showDockDrafts ? (
+                    <div className="config-pills receiver-review-dock__drafts" data-testid="receiver-draft-list">
+                      {allReceiverDrafts.map((draft) => (
+                        <span
+                          key={draft.id}
+                          className={draft.status === 'invalid' ? 'is-pending' : undefined}
+                          title={draft.status === 'staged' ? draft.label : draft.reason}
+                        >
+                          {draft.id}
+                          {draft.status === 'staged'
+                            ? ` ${formatParameterValue(draft.currentValue, draft.definition?.unit)} → ${formatParameterValue(draft.nextValue, draft.definition?.unit)}`
+                            : draft.status === 'invalid'
+                              ? ' invalid'
+                              : ''}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="receiver-review-dock__actions">
+                  <button
+                    data-testid="receiver-draft-show"
+                    style={buttonStyle()}
+                    onClick={() => setShowDockDrafts((existing) => !existing)}
+                  >
+                    {showDockDrafts ? 'Hide changes' : 'Show changes'}
+                  </button>
                   <button
                     data-testid="receiver-discard-button"
                     style={buttonStyle()}

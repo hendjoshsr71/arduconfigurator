@@ -14028,6 +14028,12 @@ details.metadata-settings-section:not([open]) > summary::after {
 .receiver-workspace__config {
   order: 3;
 }
+/* The apply dock had no order, so it sorted FIRST and sat at the top of the
+   tab — the "staged bar at the top" every reverse box seemed to summon. Last
+   in the flow, sticky to the viewport bottom. */
+.telemetry-stack--receiver .receiver-review-dock {
+  order: 4;
+}
 
 .telemetry-stack--receiver .receiver-live-primary-grid {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -5540,7 +5540,14 @@ test.describe('Receiver scoped apply', () => {
     const dock = page.locator('.receiver-review-dock')
     await expect(dock).toBeVisible()
     await expect(dock).toContainText(/1 staged/i)
-    await expect(dock).toContainText('RC_OPTIONS')
+    // The per-draft list is on request, and the dock sits at the bottom of
+    // the tab, under the task body, not above it.
+    await expect(page.getByTestId('receiver-draft-list')).toHaveCount(0)
+    await page.getByTestId('receiver-draft-show').click()
+    await expect(page.getByTestId('receiver-draft-list')).toContainText('RC_OPTIONS')
+    const dockTop = (await dock.boundingBox())?.y ?? 0
+    const bodyTop = (await page.getByTestId('receiver-task-nav').boundingBox())?.y ?? 0
+    expect(dockTop).toBeGreaterThan(bodyTop)
 
     const applyButton = page.getByTestId('receiver-apply-button')
     await expect(applyButton).toBeEnabled()
@@ -5599,6 +5606,7 @@ test.describe('Receiver mapping', () => {
     await expect(page.getByTestId('receiver-map-roll').locator('.scoped-editor-field').first()).toHaveClass(/scoped-editor-field--staged/)
     const dock = page.getByTestId('receiver-review-dock')
     await expect(dock).toContainText(/\d staged/)
+    await page.getByTestId('receiver-draft-show').click()
     await expect(dock).toContainText('RCMAP_ROLL 2 → 1')
     await expect(dock).toContainText('RCMAP_PITCH 1 → 2')
     await expect(page.getByTestId('receiver-apply-button')).toHaveText(/Apply Receiver Changes \(\d\)/)
@@ -5619,8 +5627,13 @@ test.describe('Receiver mapping', () => {
     await expect(reverse).not.toBeChecked()
     await reverse.check()
     const dock = page.getByTestId('receiver-review-dock')
+    await page.getByTestId('receiver-draft-show').click()
     await expect(dock).toContainText('RC2_REVERSED 0 → 1')
     await expect(page.getByTestId('receiver-reverse-2')).toHaveClass(/scoped-editor-field--staged/)
+    // Staging must not move the page: the bottom chip is fixed, and no note
+    // appears above the workspace (the Basic-mode "drafts hidden" note is gone).
+    await expect(page.getByTestId('global-draft-bar')).toBeVisible()
+    await expect(page.getByText('Expert drafts hidden in Basic mode')).toHaveCount(0)
 
     // A manual pick stages RCMAP_* without the capture flow.
     const yawPick = page.getByTestId('receiver-map-yaw').locator('select')
@@ -5666,6 +5679,7 @@ test.describe('Receiver endpoints on a CRSF link', () => {
     await page.getByTestId('receiver-set-crsf-limits').click()
     const dock = page.getByTestId('receiver-review-dock')
     await expect(dock).toContainText('8 staged')
+    await page.getByTestId('receiver-draft-show').click()
     await expect(dock).toContainText('RC1_MIN 1000 → 987')
     await expect(dock).toContainText('RC4_MAX 2000 → 2011')
     await expect(dock).not.toContainText('RC1_TRIM')
