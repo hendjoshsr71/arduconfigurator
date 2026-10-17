@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactElement } from 'react'
 
+import { downloadTextFile } from './download.js'
 import { Panel, buttonStyle } from './index.js'
 
 // A scrolling console for a long operation: a flash, a settings read, a probe
@@ -116,13 +117,13 @@ export function LogConsole(props: LogConsoleProps): ReactElement {
 
   const text = (): string => `${log.lines.join('\n')}\n`
 
+  // Through the shared helper: a detached anchor is ignored by Brave.
   const download = (): void => {
-    const url = URL.createObjectURL(new Blob([text()], { type: 'text/plain' }))
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `${downloadName}-${new Date().toISOString().replace(/[:.]/g, '-')}.log`
-    anchor.click()
-    URL.revokeObjectURL(url)
+    downloadTextFile(
+      `${downloadName}-${new Date().toISOString().replace(/[:.]/g, '-')}.log`,
+      text(),
+      'text/plain'
+    )
   }
 
   const empty = log.lines.length === 0

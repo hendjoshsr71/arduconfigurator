@@ -147,6 +147,13 @@ export {
   type LogConsoleProps,
   type LogLines
 } from './LogConsole.js'
+export {
+  DraftBar,
+  type DraftBarProps,
+  type DraftBarReboot
+} from './DraftBar.js'
+export { InfoDot, type InfoDotLink, type InfoDotProps } from './InfoDot.js'
+export { downloadBinaryFile, downloadTextFile, triggerBlobDownload } from './download.js'
 export { ProgressBar, type ProgressBarProps } from './ProgressBar.js'
 export { ThemeToggle } from './ThemeToggle.js'
 export { applyTheme, getStoredTheme, isTheme, useTheme, type Theme, type UseThemeResult } from './theme.js'

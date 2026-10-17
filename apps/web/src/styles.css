@@ -978,65 +978,11 @@
   flex: 1;
 }
 
-/* Floating staged-changes chip. Was previously a sticky-top:0 bar that
- * pushed the workspace down by its own height (~40-60px) and obscured
- * the top of the active tab whenever any draft was pending. Now fixed
- * at the bottom-right of the viewport so it never moves content; the
- * actions (Show changes / Write / Discard) are still one click away
- * but never compete with the tab the operator is editing. */
 /* The Receiver tab has its own apply dock listing the same drafts; while it
-   is on the page the global bar steps aside instead of covering it. */
+   is on the page the global bar steps aside instead of covering it. The bar's
+   own rules are in @arduconfig/ui-kit/styles.css. */
 body:has(.receiver-review-dock) .parameter-draft-bar {
   display: none;
-}
-.parameter-draft-bar {
-  position: fixed;
-  bottom: max(16px, env(safe-area-inset-bottom, 16px));
-  right: 16px;
-  z-index: 60;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent, var(--primary-500)) 22%, var(--surface-200));
-  border: 1px solid color-mix(in srgb, var(--accent, var(--primary-500)) 50%, transparent);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-  max-width: calc(100vw - 32px);
-}
-
-/* Reboot mode — the write is done and the FC needs a restart. Bump the accent
-   so the pill reads as "action needed", since the reboot is now the only
-   control and a new operator must not miss it. */
-.parameter-draft-bar--reboot {
-  background: color-mix(in srgb, var(--accent, var(--primary-500)) 36%, var(--surface-200));
-  border-color: color-mix(in srgb, var(--accent, var(--primary-500)) 72%, transparent);
-  padding: 8px 14px;
-}
-
-.parameter-draft-bar__summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px 12px;
-  min-width: 0;
-}
-
-.parameter-draft-bar__summary small {
-  opacity: 0.7;
-  text-transform: capitalize;
-}
-
-.parameter-draft-bar__invalid {
-  color: var(--danger, var(--danger));
-  font-weight: 600;
-}
-
-.parameter-draft-bar__actions {
-  display: flex;
-  gap: var(--space-2);
-  flex-shrink: 0;
 }
 
 .workspace-layout {
@@ -6352,133 +6298,6 @@ body.is-status-dash-dragging {
   box-shadow:
     inset 0 0 0 1px rgba(183, 149, 93, 0.14),
     0 10px 24px rgba(0, 0, 0, 0.18);
-}
-
-.receiver-info-dot {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  color: var(--text-muted);
-  cursor: default;
-  font-size: var(--text-2xs);
-  font-style: italic;
-  font-weight: 700;
-  line-height: 1;
-  vertical-align: middle;
-  opacity: 0.65;
-}
-.receiver-info-dot:hover {
-  opacity: 1;
-}
-/* Immediate, readable hover tooltip carrying the task description. Opens
-   downward (vertical — unaffected by the workspace's overflow-x: clip) and
-   centered on the dot; high z-index so it isn't covered by sibling cards. */
-.receiver-info-tip {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 200;
-  width: max-content;
-  max-width: 240px;
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface-300, rgb(var(--fill-rgb)));
-  color: var(--text);
-  font-size: var(--text-md);
-  font-style: normal;
-  font-weight: 400;
-  letter-spacing: normal;
-  line-height: 1.45;
-  text-align: left;
-  text-transform: none;
-  white-space: normal;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.12s ease;
-}
-
-/* Phone: the tip stops chasing the dot.
- *
- * It is centred on a 14px dot (`left: 50%` + `translateX(-50%)`), so at 390px a
- * 240-300px box hangs off whichever side the dot is nearest — measured 29px off
- * the right of a `--wide` tip on Tuning, with `html`/`body` `overflow-x: clip`
- * hiding the evidence, so the guidance was silently truncated on a phone.
- * Pinned to the viewport it always fits and stays readable; proximity to the
- * dot matters less than legibility at this width, and the dot keeps its
- * hover/focus relationship. */
-@media (max-width: 640px) {
-  .receiver-info-tip {
-    position: fixed;
-    top: auto;
-    bottom: var(--space-4);
-    left: var(--space-4);
-    right: var(--space-4);
-    width: auto;
-    max-width: none;
-    transform: none;
-  }
-}
-
-.receiver-info-dot:hover .receiver-info-tip,
-.receiver-info-dot:focus-visible .receiver-info-tip {
-  opacity: 1;
-  visibility: visible;
-}
-/* A tip carrying a wiki link has to be reachable. Three things block that on the
-   plain tip, and all three are deliberate there: it has pointer-events: none, it
-   sits 6px below a 14px dot with a dead band in between, and it only opens while
-   the DOT itself is hovered/focused. Undo each of them — for linked tips only. */
-.receiver-info-tip--linked {
-  pointer-events: auto;
-}
-/* Invisible bridge across the 6px gap so a pointer travelling from the dot to
-   the link never leaves the dot's hover area and close the tip under the cursor. */
-.receiver-info-tip--linked::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -8px;
-  height: 8px;
-}
-/* focus-within, not the dot's own :focus-visible: tabbing onto the link inside
-   blurs the dot, which would close the tip and make the link unreachable by
-   keyboard. Scoped to linked tips so text-only dots keep their existing rules. */
-.receiver-info-dot:focus-within .receiver-info-tip--linked {
-  opacity: 1;
-  visibility: visible;
-}
-.receiver-info-wiki {
-  display: inline-block;
-  margin-top: 6px;
-  color: var(--accent-strong, var(--accent));
-  font-size: var(--text-sm);
-  text-decoration: underline;
-}
-/* Multi-point guidance inside a tip: each point on its own line so a card's
-   condensed help stays scannable in the hover box (replaces the always-on
-   output-note-list bullet walls on the tuning cards). */
-.receiver-info-tip .info-dot-line {
-  display: block;
-}
-.receiver-info-tip .info-dot-line + .info-dot-line {
-  margin-top: 6px;
-}
-/* Let a card/section title's info dot sit a touch wider — card guidance runs a
-   little longer than the terse tab-strip task detail. */
-.receiver-info-tip--wide {
-  /* Clamped to the viewport so a wide tip near a screen edge cannot overhang it
-     on a narrow window that is still above the phone breakpoint above. */
-  max-width: min(300px, calc(100vw - 2 * var(--space-4, 16px)));
 }
 
 /* Card/section title paired with its guidance info dot on one row. Keeps the
@@ -13532,14 +13351,6 @@ details.metadata-settings-section:not([open]) > summary::after {
 
   .workspace-sidebar__shell {
     padding: 4px 6px;
-  }
-
-  /* Mobile: keep the chip floating at the bottom-right but allow it to
-   * shrink to thumb width without overflowing. */
-  .parameter-draft-bar {
-    padding: 6px 10px;
-    right: 8px;
-    bottom: max(8px, env(safe-area-inset-bottom, 8px));
   }
 }
 
